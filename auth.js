@@ -53,6 +53,7 @@ async function handleRegister(e) {
     e.preventDefault();
     const email = document.getElementById('register-email').value;
     const password = document.getElementById('register-password').value;
+    const selectedTier = document.getElementById('tier-select').value;
 
     const { data, error } = await supabase.auth.signUp({
         email,
@@ -61,9 +62,28 @@ async function handleRegister(e) {
 
     if (error) {
         showMessage(error.message, true);
-    } else {
-        showMessage('Registration successful! Check your email to confirm.');
-        registerForm.reset();
+        console.error('Signup error:', error);
+        return;
+    }
+
+    // Insert profile data into profiles table
+    if (data.user) {
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([{ 
+                id: data.user.id, 
+                tier: selectedTier, 
+                role: 'user' 
+            }]);
+
+        if (profileError) {
+            console.error('Profile creation error:', profileError);
+            showMessage('Account created but profile setup failed: ' + profileError.message, true);
+        } else {
+            console.log('Profile created successfully for user:', data.user.id);
+            showMessage('Registration successful! Check your email to confirm.');
+            registerForm.reset();
+        }
     }
 }
 
