@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phi Trading | AI Predictions</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com/css2">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">PHI<span class="accent">.TRADING</span></div>
+            <ul class="nav-links">
+                <li><a href="#forex">Forex</a></li>
+                <li><a href="#crypto">Crypto</a></li>
+                <li><a href="#stocks">Stocks</a></li>
+                <li><a href="#ml-predictions">ML Predictions</a></li>
+            </ul>
+            <div class="nav-buttons">
+                <a href="#login" class="btn btn-secondary">Login</a>
+                <a href="#register" class="btn btn-primary">Register</a>
+            </div>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container">
+            <h1 class="hero-headline">DECODE THE MARKETS <br> WITH <span class="highlight">AI PRECISION</span></h1>
+            <p class="hero-subtext">Algorithmic trading signals powered by next-gen machine learning. Stop guessing. Start executing.</p>
+            <div class="hero-cta">
+                <a href="#start-trading" class="btn btn-large btn-neon">GET PREDICTIONS</a>
+            </div>
+        </div>
+        <div class="hero-background-grid"></div>
+    </header>
+
+    <script>
+        // Simple hamburger menu toggle
+        const hamburger = document.querySelector('.hamburger');
+        const navLinks = document.querySelector('.nav-links');
+        const navButtons = document.querySelector('.nav-buttons');
+
+        hamburger.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            navButtons.classList.toggle('active');
+            hamburger.classList.toggle('toggle');
+        });
+    </script>
+</body>
+</html>
