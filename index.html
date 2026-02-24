@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.sh https://*.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co; img-src 'self' data: https:;">
     <title>Phi Trading | AI Predictions</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com/css2">
@@ -22,6 +23,7 @@
             <div class="nav-buttons">
                 <a href="#login" id="show-login" class="btn btn-secondary">Login</a>
                 <a href="#register" id="show-register" class="btn btn-primary">Register</a>
+                <a href="#admin" id="admin-panel-btn" class="btn btn-secondary" style="display: none;">Admin Panel</a>
                 <button id="logout-btn" class="btn btn-secondary" style="display: none;">Logout</button>
             </div>
             <div class="hamburger">

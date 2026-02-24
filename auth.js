@@ -7,6 +7,7 @@ const registerForm = document.getElementById('register-form');
 const logoutBtn = document.getElementById('logout-btn');
 const showLoginBtn = document.getElementById('show-login');
 const showRegisterBtn = document.getElementById('show-register');
+const adminPanelBtn = document.getElementById('admin-panel-btn');
 const closeModalBtn = document.getElementById('close-modal');
 const tabBtns = document.querySelectorAll('.tab-btn');
 const authMessage = document.getElementById('auth-message');
@@ -112,20 +113,53 @@ async function handleLogout() {
     if (error) {
         console.error('Logout error:', error.message);
     }
+    // Clear localStorage
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userTier');
 }
 
 // Update UI based on auth state
-function updateUI(user) {
+async function updateUI(user) {
     if (user) {
         // User is logged in
         showLoginBtn.style.display = 'none';
         showRegisterBtn.style.display = 'none';
         logoutBtn.style.display = 'inline-block';
+
+        // Fetch user profile data
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('role, tier')
+            .eq('id', user.id)
+            .single();
+
+        if (error) {
+            console.error('Error fetching profile:', error);
+        } else if (profile) {
+            // Save to localStorage
+            localStorage.setItem('userRole', profile.role);
+            localStorage.setItem('userTier', profile.tier);
+            
+            console.log('User Role:', profile.role);
+            console.log('User Tier:', profile.tier);
+
+            // Show admin panel if user is admin
+            if (profile.role === 'admin') {
+                adminPanelBtn.style.display = 'inline-block';
+            } else {
+                adminPanelBtn.style.display = 'none';
+            }
+        }
     } else {
         // User is logged out
         showLoginBtn.style.display = 'inline-block';
         showRegisterBtn.style.display = 'inline-block';
         logoutBtn.style.display = 'none';
+        adminPanelBtn.style.display = 'none';
+        
+        // Clear localStorage
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userTier');
     }
 }
 
