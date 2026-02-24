@@ -1,5 +1,8 @@
 import { supabase } from './supabase.js';
 
+// Global State
+let currentPredictions = [];
+
 // DOM Elements
 const authModal = document.getElementById('auth-modal');
 const loginForm = document.getElementById('login-form');
@@ -8,6 +11,12 @@ const logoutBtn = document.getElementById('logout-btn');
 const showLoginBtn = document.getElementById('show-login');
 const showRegisterBtn = document.getElementById('show-register');
 const adminPanelBtn = document.getElementById('admin-panel-btn');
+const adminSection = document.getElementById('admin-section');
+const adminPredictionForm = document.getElementById('admin-prediction-form');
+const predictionsFeed = document.getElementById('predictions-feed');
+const editModal = document.getElementById('edit-modal');
+const editPredictionForm = document.getElementById('edit-prediction-form');
+const closeEditModalBtn = document.getElementById('close-edit-modal');
 const closeModalBtn = document.getElementById('close-modal');
 const tabBtns = document.querySelectorAll('.tab-btn');
 const authMessage = document.getElementById('auth-message');
@@ -47,6 +56,96 @@ function showMessage(message, isError = false) {
 function clearMessage() {
     authMessage.textContent = '';
     authMessage.className = 'auth-message';
+}
+
+// Load and display predictions based on user tier
+async function loadPredictions() {
+    if (!predictionsFeed) return;
+
+    // Get user tier from localStorage
+    const userTier = localStorage.getItem('userTier');
+    
+    if (!userTier) {
+        predictionsFeed.innerHTML = '<div class="no-predictions">Please log in to view predictions.</div>';
+        return;
+    }
+
+    // Fetch all predictions from Supabase
+    const { data: predictions, error } = await supabase
+        .from('predictions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching predictions:', error);
+        predictionsFeed.innerHTML = '<div class="no-predictions">Error loading predictions.</div>';
+        return;
+    }
+
+    // Store in global state
+    currentPredictions = predictions || [];
+
+    // Define tier hierarchy
+    const tierHierarchy = {
+        'Bronze': ['Bronze'],
+        'Silver': ['Bronze', 'Silver'],
+        'Gold': ['Bronze', 'Silver', 'Gold']
+    };
+
+    // Filter predictions based on user tier
+    const allowedTiers = tierHierarchy[userTier] || ['Bronze'];
+    const filteredPredictions = predictions.filter(pred => 
+        allowedTiers.includes(pred.required_tier)
+    );
+
+    // Check if user is admin
+    const isAdmin = localStorage.getItem('userRole') === 'admin';
+
+    // Render predictions
+    if (filteredPredictions.length === 0) {
+        predictionsFeed.innerHTML = '<div class="no-predictions">No predictions available for your tier.</div>';
+        return;
+    }
+
+    predictionsFeed.innerHTML = filteredPredictions.map(pred => {
+        const date = new Date(pred.created_at);
+        const formattedDate = date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        // Include image if available
+        const imageHtml = pred.image_url 
+            ? `<img src="${pred.image_url}" alt="${pred.asset}" class="prediction-image">` 
+            : '';
+
+        // Admin action buttons
+        const adminButtons = isAdmin ? `
+            <div class="prediction-actions" style="position:absolute; top:12px; right:12px; display:flex; gap:8px; z-index:2;">
+                <button class="edit-btn" data-id="${pred.id}" style="padding:6px 14px; background:#00ff88; color:#050505; border:none; font-weight:700; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer;">Edit</button>
+                <button class="delete-btn" data-id="${pred.id}" style="padding:6px 14px; background:#ff4444; color:#fff; border:none; font-weight:700; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer;">Delete</button>
+            </div>
+        ` : '';
+
+        return `
+            <div class="prediction-card" data-id="${pred.id}">
+                <span class="prediction-category">${pred.category}</span>
+                ${adminButtons}
+                <h3 class="prediction-asset">${pred.asset}</h3>
+                ${imageHtml}
+                <p class="prediction-text">${pred.prediction_text}</p>
+                <div class="prediction-footer">
+                    <span class="prediction-tier">Tier: ${pred.required_tier}</span>
+                    <span class="prediction-timestamp">${formattedDate}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    console.log(`Loaded ${filteredPredictions.length} predictions for ${userTier} tier`);
 }
 
 // Register function
@@ -104,6 +203,8 @@ async function handleLogin(e) {
     } else {
         showMessage('Login successful!');
         closeModal();
+        // Load predictions after successful login
+        setTimeout(loadPredictions, 500);
     }
 }
 
@@ -146,8 +247,10 @@ async function updateUI(user) {
             // Show admin panel if user is admin
             if (profile.role === 'admin') {
                 adminPanelBtn.style.display = 'inline-block';
+                adminSection.style.display = 'block';
             } else {
                 adminPanelBtn.style.display = 'none';
+                adminSection.style.display = 'none';
             }
         }
     } else {
@@ -156,6 +259,7 @@ async function updateUI(user) {
         showRegisterBtn.style.display = 'inline-block';
         logoutBtn.style.display = 'none';
         adminPanelBtn.style.display = 'none';
+        adminSection.style.display = 'none';
         
         // Clear localStorage
         localStorage.removeItem('userRole');
@@ -166,11 +270,17 @@ async function updateUI(user) {
 // Auth State Change Listener
 supabase.auth.onAuthStateChange((event, session) => {
     updateUI(session?.user ?? null);
+    if (session?.user) {
+        setTimeout(loadPredictions, 500);
+    }
 });
 
 // Check initial session
 supabase.auth.getSession().then(({ data: { session } }) => {
     updateUI(session?.user ?? null);
+    if (session?.user) {
+        loadPredictions();
+    }
 });
 
 // Event Listeners
@@ -199,3 +309,210 @@ tabBtns.forEach(btn => {
 loginForm.addEventListener('submit', handleLogin);
 registerForm.addEventListener('submit', handleRegister);
 logoutBtn.addEventListener('click', handleLogout);
+
+// Admin Panel Button - Scroll to Admin Section
+if (adminPanelBtn) {
+    adminPanelBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (adminSection) {
+            adminSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+}
+
+// Admin Prediction Form Submit
+if (adminPredictionForm) {
+    adminPredictionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const category = document.getElementById('prediction-category').value;
+        const asset = document.getElementById('prediction-asset').value;
+        const predictionText = document.getElementById('prediction-text').value;
+        const requiredTier = document.getElementById('prediction-tier').value;
+        const imageFile = document.getElementById('prediction-image').files[0];
+        
+        let imageUrl = null;
+        
+        // Upload image if selected
+        if (imageFile) {
+            try {
+                // Generate unique filename
+                const fileName = Date.now() + '-' + imageFile.name;
+                
+                // Upload to Supabase Storage
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('prediction_images')
+                    .upload(fileName, imageFile);
+                
+                if (uploadError) {
+                    console.error('Error uploading image:', uploadError);
+                    alert('Error uploading image: ' + uploadError.message);
+                    return;
+                }
+                
+                // Get public URL
+                const { data: urlData } = supabase.storage
+                    .from('prediction_images')
+                    .getPublicUrl(fileName);
+                
+                imageUrl = urlData.publicUrl;
+                console.log('Image uploaded successfully:', imageUrl);
+            } catch (err) {
+                console.error('Error during image upload:', err);
+                alert('Error uploading image. Please try again.');
+                return;
+            }
+        }
+        
+        // Insert prediction with image URL
+        const { data, error } = await supabase
+            .from('predictions')
+            .insert([
+                {
+                    category: category,
+                    asset: asset,
+                    prediction_text: predictionText,
+                    required_tier: requiredTier,
+                    image_url: imageUrl
+                }
+            ]);
+        
+        if (error) {
+            console.error('Error adding prediction:', error);
+            alert('Error adding prediction: ' + error.message);
+        } else {
+            console.log('Prediction added successfully:', data);
+            alert('✅ Prediction added successfully!');
+            adminPredictionForm.reset();
+            // Reload predictions to show the new one
+            loadPredictions();
+        }
+    });
+}
+
+// Global Event Delegation for Edit and Delete
+document.body.addEventListener('click', async (e) => {
+    // Handle Edit Button Click
+    const editBtn = e.target.closest('.edit-btn');
+    if (editBtn) {
+        const id = editBtn.getAttribute('data-id');
+        console.log('Edit clicked for ID:', id);
+        console.log('currentPredictions length:', currentPredictions.length);
+
+        const prediction = currentPredictions.find(p => String(p.id) === String(id));
+        console.log('Found prediction:', prediction);
+
+        if (prediction) {
+            document.getElementById('edit-prediction-id').value = prediction.id;
+            document.getElementById('edit-category').value = prediction.category;
+            document.getElementById('edit-asset').value = prediction.asset;
+            document.getElementById('edit-text').value = prediction.prediction_text;
+            document.getElementById('edit-tier').value = prediction.required_tier;
+            // Reset file input and show current image preview
+            document.getElementById('edit-image').value = '';
+            const previewEl = document.getElementById('edit-current-image');
+            if (prediction.image_url) {
+                previewEl.innerHTML = `<img src="${prediction.image_url}" alt="current" style="max-width:100%; max-height:120px; border:1px solid #333; margin-top:4px;">`;
+            } else {
+                previewEl.innerHTML = '<span style="color:#666; font-size:0.85rem;">No current image</span>';
+            }
+            document.getElementById('edit-modal').style.display = 'flex';
+        } else {
+            console.error('Prediction not found in currentPredictions for id:', id);
+        }
+        return;
+    }
+
+    // Handle Close Modal Button Click
+    if (e.target.id === 'close-edit-modal') {
+        document.getElementById('edit-modal').style.display = 'none';
+        return;
+    }
+
+    // Handle Delete Button Click
+    const deleteBtn = e.target.closest('.delete-btn');
+    if (deleteBtn) {
+        const id = deleteBtn.getAttribute('data-id');
+        await deletePrediction(id);
+    }
+});
+
+// Edit Prediction Form Submit
+if (editPredictionForm) {
+    editPredictionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const id = document.getElementById('edit-prediction-id').value;
+        const category = document.getElementById('edit-category').value;
+        const asset = document.getElementById('edit-asset').value;
+        const predictionText = document.getElementById('edit-text').value;
+        const requiredTier = document.getElementById('edit-tier').value;
+        const imageFile = document.getElementById('edit-image').files[0];
+
+        const updateData = {
+            category: category,
+            asset: asset,
+            prediction_text: predictionText,
+            required_tier: requiredTier
+        };
+
+        // Upload new image if selected
+        if (imageFile) {
+            const fileName = Date.now() + '-' + imageFile.name;
+            const { error: uploadError } = await supabase.storage
+                .from('prediction_images')
+                .upload(fileName, imageFile);
+            if (uploadError) {
+                alert('Image upload failed: ' + uploadError.message);
+                return;
+            }
+            const { data: urlData } = supabase.storage
+                .from('prediction_images')
+                .getPublicUrl(fileName);
+            updateData.image_url = urlData.publicUrl;
+            console.log('New image uploaded:', urlData.publicUrl);
+        }
+
+        // Update prediction
+        const { data, error } = await supabase
+            .from('predictions')
+            .update(updateData)
+            .eq('id', id);
+
+        console.log('Update response:', error, data);
+
+        if (error) {
+            console.error('Error updating prediction:', error);
+            alert('Error updating prediction: ' + error.message);
+        } else {
+            alert('✅ Prediction updated successfully!');
+            document.getElementById('edit-modal').style.display = 'none';
+            editPredictionForm.reset();
+            loadPredictions();
+        }
+    });
+}
+
+// Delete Prediction
+async function deletePrediction(predictionId) {
+    if (!confirm('Are you sure you want to delete this prediction?')) {
+        return;
+    }
+
+    console.log('Deleting prediction ID:', predictionId);
+
+    const { data, error } = await supabase
+        .from('predictions')
+        .delete()
+        .eq('id', predictionId);
+
+    console.log('Delete response:', data, error);
+
+    if (error) {
+        console.error('Error deleting prediction:', error);
+        alert('Error deleting prediction: ' + error.message);
+    } else {
+        alert('✅ Prediction deleted successfully!');
+        loadPredictions();
+    }
+}

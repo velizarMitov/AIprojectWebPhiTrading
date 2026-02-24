@@ -46,6 +46,65 @@
         <div class="hero-background-grid"></div>
     </header>
 
+    <!-- Admin Panel Section -->
+    <section id="admin-section" class="admin-section" style="display: none;">
+        <div class="container">
+            <h2 class="admin-title">ADMIN PANEL</h2>
+            <div class="admin-panel">
+                <h3 class="panel-subtitle">Add New Prediction</h3>
+                <form id="admin-prediction-form" class="admin-form">
+                    <div class="form-group">
+                        <label for="prediction-category">Category</label>
+                        <select id="prediction-category" name="category" required>
+                            <option value="">Select Category</option>
+                            <option value="Forex">Forex</option>
+                            <option value="Crypto">Crypto</option>
+                            <option value="Stocks">Stocks</option>
+                            <option value="ML">ML Predictions</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="prediction-asset">Asset</label>
+                        <input type="text" id="prediction-asset" name="asset" placeholder="e.g., BTC/USD, EUR/USD" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="prediction-text">Prediction Text</label>
+                        <textarea id="prediction-text" name="prediction_text" rows="5" placeholder="Enter your trading prediction..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="prediction-tier">Required Tier</label>
+                        <select id="prediction-tier" name="required_tier" required>
+                            <option value="">Select Tier</option>
+                            <option value="Bronze">Bronze</option>
+                            <option value="Silver">Silver</option>
+                            <option value="Gold">Gold</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="prediction-image">Prediction Image (Optional)</label>
+                        <input type="file" id="prediction-image" name="image" accept="image/*">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-large">Add Prediction</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Predictions Feed Section -->
+    <section id="predictions-section" class="predictions-section">
+        <div class="container">
+            <h2 class="predictions-title">LATEST PREDICTIONS</h2>
+            <div id="predictions-feed" class="predictions-feed">
+                <!-- Predictions will be dynamically loaded here -->
+            </div>
+        </div>
+    </section>
+
     <!-- Auth Modal -->
     <div id="auth-modal" class="modal">
         <div class="modal-content">
@@ -88,6 +147,55 @@
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Prediction Modal -->
+    <div id="edit-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#1a1a1a; border:2px solid #333; padding:40px; width:90%; max-width:580px; position:relative; max-height:90vh; overflow-y:auto;">
+            <button type="button" id="close-edit-modal" style="position:absolute; top:12px; right:18px; background:none; border:none; color:#e0e0e0; font-size:1.8rem; cursor:pointer; line-height:1;">&times;</button>
+            <h2 style="color:#00ff88; font-size:1.6rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:28px;">Edit Prediction</h2>
+
+            <form id="edit-prediction-form">
+                <input type="hidden" id="edit-prediction-id">
+
+                <div style="margin-bottom:18px;">
+                    <label style="display:block; color:#aaa; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Category</label>
+                    <select id="edit-category" required style="width:100%; padding:12px; background:#0d0d0d; border:1px solid #444; color:#e0e0e0; font-size:1rem; border-radius:0; outline:none;">
+                        <option value="Forex">Forex</option>
+                        <option value="Crypto">Crypto</option>
+                        <option value="Stocks">Stocks</option>
+                        <option value="ML">ML Predictions</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <label style="display:block; color:#aaa; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Asset</label>
+                    <input type="text" id="edit-asset" required placeholder="e.g., BTC/USD" style="width:100%; padding:12px; background:#0d0d0d; border:1px solid #444; color:#e0e0e0; font-size:1rem; border-radius:0; outline:none; box-sizing:border-box;">
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <label style="display:block; color:#aaa; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Prediction Text</label>
+                    <textarea id="edit-text" rows="6" required style="width:100%; padding:12px; background:#0d0d0d; border:1px solid #444; color:#e0e0e0; font-size:1rem; border-radius:0; outline:none; resize:vertical; box-sizing:border-box;"></textarea>
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <label style="display:block; color:#aaa; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Required Tier</label>
+                    <select id="edit-tier" required style="width:100%; padding:12px; background:#0d0d0d; border:1px solid #444; color:#e0e0e0; font-size:1rem; border-radius:0; outline:none;">
+                        <option value="Bronze">Bronze</option>
+                        <option value="Silver">Silver</option>
+                        <option value="Gold">Gold</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom:28px;">
+                    <label style="display:block; color:#aaa; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Image <span style="color:#666; font-size:0.8rem;">(optional — leave empty to keep current)</span></label>
+                    <input type="file" id="edit-image" accept="image/*" style="width:100%; padding:10px; background:#0d0d0d; border:1px solid #444; color:#aaa; font-size:0.9rem; box-sizing:border-box; cursor:pointer;">
+                    <div id="edit-current-image" style="margin-top:10px;"></div>
+                </div>
+
+                <button type="submit" style="width:100%; padding:14px; background:#00ff88; color:#050505; font-weight:800; font-size:1rem; text-transform:uppercase; letter-spacing:1px; border:none; cursor:pointer;">Save Changes</button>
             </form>
         </div>
     </div>
