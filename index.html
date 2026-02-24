@@ -20,8 +20,9 @@
                 <li><a href="#ml-predictions">ML Predictions</a></li>
             </ul>
             <div class="nav-buttons">
-                <a href="#login" class="btn btn-secondary">Login</a>
-                <a href="#register" class="btn btn-primary">Register</a>
+                <a href="#login" id="show-login" class="btn btn-secondary">Login</a>
+                <a href="#register" id="show-register" class="btn btn-primary">Register</a>
+                <button id="logout-btn" class="btn btn-secondary" style="display: none;">Logout</button>
             </div>
             <div class="hamburger">
                 <span></span>
@@ -42,17 +43,56 @@
         <div class="hero-background-grid"></div>
     </header>
 
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <button id="close-modal" class="modal-close">&times;</button>
+            <div class="modal-tabs">
+                <button class="tab-btn active" data-tab="login">Login</button>
+                <button class="tab-btn" data-tab="register">Register</button>
+            </div>
+            <div id="auth-message" class="auth-message"></div>
+            
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form active">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Login</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" required placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" required minlength="6" placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Register</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Simple hamburger menu toggle
-        const hamburger = document.querySelector('.hamburger');
-        const navLinks = document.querySelector('.nav-links');
-        const navButtons = document.querySelector('.nav-buttons');
+        const hamburger = document.querySelector(".hamburger");
+        const navLinks = document.querySelector(".nav-links");
+        const navButtons = document.querySelector(".nav-buttons");
 
-        hamburger.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-            navButtons.classList.toggle('active');
-            hamburger.classList.toggle('toggle');
+        hamburger.addEventListener("click", () => {
+            navLinks.classList.toggle("active");
+            navButtons.classList.toggle("active");
+            hamburger.classList.toggle("toggle");
         });
     </script>
+    <script type="module" src="auth.js"></script>
 </body>
 </html>
