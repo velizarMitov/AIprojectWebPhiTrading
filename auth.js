@@ -292,11 +292,184 @@ supabase.auth.onAuthStateChange((event, session) => {
     }
 });
 
-// Check initial session
-supabase.auth.getSession().then(({ data: { session } }) => {
-    updateUI(session?.user ?? null);
-    if (session?.user) {
-        loadPredictions();
+// --- NEWS SYSTEM LOGIC ---
+
+// DOM Elements for News
+const adminNewsForm = document.getElementById('admin-news-form');
+const newsContentInput = document.getElementById('news-content');
+const newsListContainer = document.getElementById('admin-news-list');
+const newsSlider = document.getElementById('news-slider');
+
+// Fetch and Display News in Admin Panel
+async function loadAdminNews() {
+    if (!newsListContainer) return;
+    
+    const UserRole = localStorage.getItem('userRole');
+    if (UserRole !== 'admin') return;
+
+    const { data: news, error } = await supabase
+        .from('news')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching news:', error);
+        return;
+    }
+
+    newsListContainer.innerHTML = news.map(item => `
+        <div style="background: #1a1a1a; padding: 10px; margin-bottom: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #e0e0e0; font-size: 0.9rem;">${item.content}</span>
+            <button onclick="deleteNews('${item.id}')" style="background: #ff4444; border: none; color: white; padding: 5px 10px; cursor: pointer;">Del</button>
+        </div>
+    `).join('');
+    
+    // Bind delete buttons dynamically
+    const buttons = newsListContainer.querySelectorAll('button');
+    buttons.forEach(btn => {
+        btn.onclick = function() {
+            // Extract ID from the parent loop or attach it directly
+            // Simpler: re-attach event listeners properly
+        }
+    });
+}
+
+// Global scope for delete function (for onclick)
+window.deleteNews = async (id) => {
+    if (!confirm('Delete this news item?')) return;
+    
+    const { error } = await supabase
+        .from('news')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        alert('Error deleting news');
+        console.error(error);
+    } else {
+        loadAdminNews();
+        loadNewsSlider(); // Refresh slider
+    }
+};
+
+// Post News
+if (adminNewsForm) {
+    adminNewsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const content = newsContentInput.value;
+        const newsImageInput = document.getElementById('news-image-input');
+        const imageFile = newsImageInput ? newsImageInput.files[0] : null;
+
+        if (!content) return;
+
+        const submitBtn = adminNewsForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Posting...';
+
+        try {
+            let imageUrl = null;
+
+            // Handle Image Upload
+            if (imageFile) {
+                submitBtn.innerHTML = 'Uploading Image...';
+                const fileName = `news-${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+                
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('news-images')
+                    .upload(fileName, imageFile);
+
+                if (uploadError) throw new Error('Image upload failed: ' + uploadError.message);
+
+                const { data: urlData } = supabase.storage
+                    .from('news-images')
+                    .getPublicUrl(fileName);
+                
+                imageUrl = urlData.publicUrl;
+            }
+
+            // Insert News Item
+            const { error: insertError } = await supabase
+                .from('news')
+                .insert([{ 
+                    content: content, 
+                    image_url: imageUrl 
+                }]);
+
+            if (insertError) throw insertError;
+
+            // Success
+            newsContentInput.value = '';
+            if (newsImageInput) newsImageInput.value = '';
+            loadAdminNews();
+            loadNewsSlider();
+            alert('News posted successfully!');
+
+        } catch (err) {
+            console.error(err);
+            alert(err.message || 'Error posting news');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    }); // End submit listener
+}
+
+// News Slider Logic
+async function loadNewsSlider() {
+    if (!newsSlider) return;
+    
+    // Initial fetch
+    const { data: newsItems, error } = await supabase
+        .from('news')
+        .select('content')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+    if (error || !newsItems || newsItems.length === 0) {
+        newsSlider.innerHTML = `
+            <div class="news-item active">
+                <span class="breaking-tag">STATUS</span>
+                <span class="news-content">AI Market Analysis System Online...</span>
+            </div>`;
+        return;
+    }
+
+    let currentIndex = 0;
+    
+    function cycleNews() {
+        const item = newsItems[currentIndex];
+        
+        // Fade out
+        newsSlider.style.opacity = '0';
+        
+        setTimeout(() => {
+            // Update content
+            newsSlider.innerHTML = `
+                <div class="news-item">
+                    <span class="breaking-tag">BREAKING</span>
+                    <span class="news-content">${item.content}</span>
+                </div>
+            `;
+            // Fade in
+            newsSlider.style.opacity = '1';
+            
+            // Increment index
+            currentIndex = (currentIndex + 1) % newsItems.length;
+        }, 500); // Wait for fade out
+    }
+
+    // Start cycle
+    cycleNews();
+    setInterval(cycleNews, 5000);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    loadNewsSlider();
+    // Admin list is loaded when admin panel is shown or page loads if admin
+    if (localStorage.getItem('userRole') === 'admin') {
+        loadAdminNews();
     }
 });
 
@@ -851,3 +1024,23 @@ async function initTicker() {
 document.addEventListener('DOMContentLoaded', () => {
     initTicker();
 });
+
+
+// --- RESTORED AUTH INITIALIZATION ---
+
+// Auth State Change Listener
+supabase.auth.onAuthStateChange((event, session) => {
+    updateUI(session?.user ?? null);
+    if (session?.user) {
+        setTimeout(loadPredictions, 500);
+    }
+});
+
+// Check initial session
+supabase.auth.getSession().then(({ data: { session } }) => {
+    updateUI(session?.user ?? null);
+    if (session?.user) {
+        loadPredictions();
+    }
+});
+

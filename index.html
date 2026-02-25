@@ -45,7 +45,12 @@
     <header class="hero">
         <div class="container">
             <h1 class="hero-headline">DECODE THE MARKETS <br> WITH <span class="highlight">AI PRECISION</span></h1>
-            <p class="hero-subtext">Algorithmic trading signals powered by next-gen machine learning. Stop guessing. Start executing.</p>
+            <div id="news-slider" class="news-slider">
+                <div class="news-item">
+                    <span class="breaking-tag">BREAKING NEWS</span>
+                    <span class="news-content">AI System Initializing...</span>
+                </div>
+            </div>
             <div class="hero-cta">
                 <a href="#start-trading" class="btn btn-large btn-neon">GET PREDICTIONS</a>
             </div>
@@ -57,6 +62,26 @@
     <section id="admin-section" class="admin-section" style="display: none;">
         <div class="container">
             <h2 class="admin-title">ADMIN PANEL</h2>
+            
+            <!-- News Management -->
+            <div class="admin-panel" style="margin-bottom: 40px;">
+                <h3 class="panel-subtitle">Manage News</h3>
+                <form id="admin-news-form" class="admin-form">
+                    <div class="form-group">
+                        <label for="news-content">News Content</label>
+                        <textarea id="news-content" name="content" rows="3" placeholder="Enter breaking news..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="news-image-input">News Image (Optional)</label>
+                        <input type="file" id="news-image-input" accept="image/*" style="width: 100%; margin-top: 5px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Post News</button>
+                </form>
+                <div id="admin-news-list" class="admin-list" style="margin-top: 20px;">
+                    <!-- News items will be loaded here -->
+                </div>
+            </div>
+
             <div class="admin-panel">
                 <h3 class="panel-subtitle">Add New Prediction</h3>
                 <form id="admin-prediction-form" class="admin-form">
