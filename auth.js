@@ -17,6 +17,7 @@ const predictionsFeed = document.getElementById('predictions-feed');
 const editModal = document.getElementById('edit-modal');
 const editPredictionForm = document.getElementById('edit-prediction-form');
 const closeEditModalBtn = document.getElementById('close-edit-modal');
+const predictionDetails = document.getElementById('prediction-details');
 const closeModalBtn = document.getElementById('close-modal');
 const tabBtns = document.querySelectorAll('.tab-btn');
 const authMessage = document.getElementById('auth-message');
@@ -390,6 +391,53 @@ if (adminPredictionForm) {
     });
 }
 
+// Open the full-screen details view for a prediction
+function openDetails(id) {
+    const pred = currentPredictions.find(p => String(p.id) === String(id));
+    if (!pred) return;
+
+    // Image
+    const imageWrapper = document.getElementById('details-image-wrapper');
+    if (pred.image_url) {
+        imageWrapper.innerHTML = `<img src="${pred.image_url}" alt="${pred.asset}">`;
+        imageWrapper.classList.remove('no-image');
+    } else {
+        imageWrapper.innerHTML = '';
+        imageWrapper.classList.add('no-image');
+    }
+
+    // Category tag
+    document.getElementById('details-category').textContent = pred.category;
+
+    // Asset headline
+    document.getElementById('details-asset').textContent = pred.asset;
+
+    // Tier badge with colour class
+    const tierEl = document.getElementById('details-tier');
+    tierEl.textContent = pred.required_tier.toUpperCase() + ' TIER';
+    tierEl.className = 'details-tier-badge tier-' + pred.required_tier.toLowerCase();
+
+    // Date
+    const date = new Date(pred.created_at);
+    document.getElementById('details-date').textContent = date.toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+
+    // Body text
+    document.getElementById('details-text').textContent = pred.prediction_text;
+
+    // Show overlay
+    predictionDetails.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close the details view
+function closeDetails() {
+    predictionDetails.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
 // Async function to execute the actual delete after confirmation
 async function executeDelete(id) {
     const { data, error } = await supabase
@@ -434,6 +482,18 @@ async function executeEdit(id) {
 
 // Global Event Delegation — NON-async so confirm/alert are never blocked
 document.body.addEventListener('click', (e) => {
+    // Handle Close Details View
+    if (e.target.id === 'close-details-btn' || e.target.closest('#close-details-btn')) {
+        closeDetails();
+        return;
+    }
+
+    // Close details if clicking the dark backdrop
+    if (e.target.classList.contains('details-bg')) {
+        closeDetails();
+        return;
+    }
+
     // Handle Edit Button Click
     const editBtn = e.target.closest('.edit-btn');
     if (editBtn) {
@@ -444,7 +504,7 @@ document.body.addEventListener('click', (e) => {
         return;
     }
 
-    // Handle Close Modal Button Click
+    // Handle Close Edit Modal Button Click
     if (e.target.id === 'close-edit-modal') {
         document.getElementById('edit-modal').style.display = 'none';
         return;
@@ -470,6 +530,14 @@ document.body.addEventListener('click', (e) => {
                 executeDelete(id);
             }
         });
+        return;
+    }
+
+    // Handle Prediction Card Click — open full details view
+    const card = e.target.closest('.prediction-card');
+    if (card) {
+        const id = card.getAttribute('data-id');
+        if (id) openDetails(id);
     }
 });
 

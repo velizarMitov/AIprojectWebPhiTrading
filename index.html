@@ -202,6 +202,27 @@
         </div>
     </div>
 
+    <!-- Prediction Details Overlay -->
+    <section id="prediction-details">
+        <div class="details-bg"></div>
+        <div class="details-container">
+            <button id="close-details-btn" class="details-close-btn">&#x2715; Close</button>
+            <div class="details-scroll">
+                <div id="details-image-wrapper" class="details-hero-image"></div>
+                <div class="details-body">
+                    <span id="details-category" class="details-category-tag"></span>
+                    <h1 id="details-asset" class="details-asset"></h1>
+                    <div class="details-meta">
+                        <span id="details-tier" class="details-tier-badge"></span>
+                        <span id="details-date" class="details-date"></span>
+                    </div>
+                    <div class="details-divider"></div>
+                    <p id="details-text" class="details-prediction-text"></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <script>
         // Simple hamburger menu toggle
         const hamburger = document.querySelector(".hamburger");
