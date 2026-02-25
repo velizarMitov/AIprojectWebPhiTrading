@@ -391,51 +391,69 @@ if (adminPredictionForm) {
     });
 }
 
-// Open the full-screen details view for a prediction
-function openDetails(id) {
-    const pred = currentPredictions.find(p => String(p.id) === String(id));
-    if (!pred) return;
+// Show full details view for a prediction — hides feed & admin, injects content
+function showPredictionDetails(pred) {
+    const predictionsSection = document.getElementById('predictions-section');
+    const adminSectionEl = document.getElementById('admin-section');
 
-    // Image
-    const imageWrapper = document.getElementById('details-image-wrapper');
-    if (pred.image_url) {
-        imageWrapper.innerHTML = `<img src="${pred.image_url}" alt="${pred.asset}">`;
-        imageWrapper.classList.remove('no-image');
-    } else {
-        imageWrapper.innerHTML = '';
-        imageWrapper.classList.add('no-image');
-    }
+    // Hide feed and admin panel
+    if (predictionsSection) predictionsSection.style.display = 'none';
+    if (adminSectionEl) adminSectionEl.style.display = 'none';
 
-    // Category tag
-    document.getElementById('details-category').textContent = pred.category;
+    // Build image block
+    const imageHtml = pred.image_url
+        ? `<div class="details-hero-image"><img src="${pred.image_url}" alt="${pred.asset}"></div>`
+        : '';
 
-    // Asset headline
-    document.getElementById('details-asset').textContent = pred.asset;
+    // Tier badge class
+    const tierClass = 'tier-' + pred.required_tier.toLowerCase();
 
-    // Tier badge with colour class
-    const tierEl = document.getElementById('details-tier');
-    tierEl.textContent = pred.required_tier.toUpperCase() + ' TIER';
-    tierEl.className = 'details-tier-badge tier-' + pred.required_tier.toLowerCase();
-
-    // Date
+    // Format date
     const date = new Date(pred.created_at);
-    document.getElementById('details-date').textContent = date.toLocaleDateString('en-US', {
+    const formattedDate = date.toLocaleDateString('en-US', {
         month: 'long', day: 'numeric', year: 'numeric',
         hour: '2-digit', minute: '2-digit'
     });
 
-    // Body text
-    document.getElementById('details-text').textContent = pred.prediction_text;
+    // Inject full markup into #prediction-details
+    predictionDetails.innerHTML = `
+        <div class="details-container">
+            ${imageHtml}
+            <div class="details-body">
+                <button class="back-to-feed-btn" id="back-to-feed-btn">&larr; Back to Feed</button>
+                <span class="details-category-tag">${pred.category}</span>
+                <h1 class="details-asset">${pred.asset}</h1>
+                <div class="details-meta">
+                    <span class="details-tier-badge ${tierClass}">${pred.required_tier.toUpperCase()} TIER</span>
+                    <span class="details-date">${formattedDate}</span>
+                </div>
+                <div class="details-divider"></div>
+                <p class="details-prediction-text">${pred.prediction_text}</p>
+            </div>
+        </div>
+    `;
 
-    // Show overlay
+    // Show section with fade-in animation
     predictionDetails.classList.add('active');
-    document.body.style.overflow = 'hidden';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Close the details view
-function closeDetails() {
+// Restore the feed — hide details, show main sections
+function backToFeed() {
     predictionDetails.classList.remove('active');
-    document.body.style.overflow = '';
+    predictionDetails.innerHTML = '';
+
+    const predictionsSection = document.getElementById('predictions-section');
+    if (predictionsSection) predictionsSection.style.display = '';
+
+    const isAdmin = localStorage.getItem('userRole') === 'admin';
+    const adminSectionEl = document.getElementById('admin-section');
+    if (adminSectionEl) adminSectionEl.style.display = isAdmin ? 'block' : 'none';
+
+    // Scroll back to predictions
+    if (predictionsSection) {
+        predictionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 // Async function to execute the actual delete after confirmation
@@ -482,15 +500,9 @@ async function executeEdit(id) {
 
 // Global Event Delegation — NON-async so confirm/alert are never blocked
 document.body.addEventListener('click', (e) => {
-    // Handle Close Details View
-    if (e.target.id === 'close-details-btn' || e.target.closest('#close-details-btn')) {
-        closeDetails();
-        return;
-    }
-
-    // Close details if clicking the dark backdrop
-    if (e.target.classList.contains('details-bg')) {
-        closeDetails();
+    // Back to Feed button inside details view
+    if (e.target.closest('#back-to-feed-btn')) {
+        backToFeed();
         return;
     }
 
@@ -533,11 +545,13 @@ document.body.addEventListener('click', (e) => {
         return;
     }
 
-    // Handle Prediction Card Click — open full details view
+    // Handle Prediction Card Click — open details view (not on buttons)
     const card = e.target.closest('.prediction-card');
-    if (card) {
+    if (card && !e.target.closest('.edit-btn') && !e.target.closest('.delete-btn')) {
         const id = card.getAttribute('data-id');
-        if (id) openDetails(id);
+        if (!id) return;
+        const pred = currentPredictions.find(p => String(p.id) === String(id));
+        if (pred) showPredictionDetails(pred);
     }
 });
 
