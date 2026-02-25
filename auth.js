@@ -298,7 +298,7 @@ supabase.auth.onAuthStateChange((event, session) => {
 const adminNewsForm = document.getElementById('admin-news-form');
 const newsContentInput = document.getElementById('news-content');
 const newsListContainer = document.getElementById('admin-news-list');
-const newsSlider = document.getElementById('news-slider');
+const heroNewsContainer = document.getElementById('hero-news-container');
 
 // Fetch and Display News in Admin Panel
 async function loadAdminNews() {
@@ -328,16 +328,172 @@ async function loadAdminNews() {
             ? `<img src="${item.image_url}" style="max-height: 30px; margin-right: 10px; border-radius: 3px;">` 
             : '';
         
+        // HTML escape for display (prevents XSS)
+        const displayTitle = (item.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const displayContent = (item.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 60) + '...';
+        
         return `
             <div style="background: #1a1a1a; padding: 10px; margin-bottom: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                 <div style="display: flex; align-items: center; flex: 1;">
                     ${imagePreview}
-                    <span style="color: #e0e0e0; font-size: 0.9rem;">${item.content}</span>
+                    <div>
+                        <div style="color: #00ff88; font-size: 0.9rem; font-weight: 700; margin-bottom: 4px;">${displayTitle}</div>
+                        <div style="color: #888; font-size: 0.8rem;">${displayContent}</div>
+                    </div>
                 </div>
-                <button onclick="deleteNews('${item.id}')" style="background: #ff4444; border: none; color: white; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-weight: 600;">Del</button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="edit-news-btn" data-id="${item.id}" style="background: #00ff88; border: none; color: #050505; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-weight: 600;">Edit</button>
+                    <button onclick="deleteNews('${item.id}')" style="background: #ff4444; border: none; color: white; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-weight: 600;">Del</button>
+                </div>
             </div>
         `;
     }).join('');
+    
+    // Add event listeners to Edit buttons using event delegation
+    newsListContainer.querySelectorAll('.edit-news-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            // Fetch full news item from database for accurate editing
+            const { data: newsItem, error } = await supabase
+                .from('news')
+                .select('*')
+                .eq('id', id)
+                .single();
+            
+            if (error) {
+                console.error('Error fetching news item:', error);
+                alert('Error loading news for editing');
+                return;
+            }
+            
+            openEditNewsModal(id, newsItem.title, newsItem.content, newsItem.image_url);
+        });
+    });
+}
+
+// Open Edit News Modal
+window.openEditNewsModal = (id, title, content, imageUrl) => {
+    console.log('🔧 Opening edit news modal for ID:', id);
+    console.log('📜Title:', title);
+    console.log('📝Content length:', content?.length, 'chars');
+    console.log('🖼️ Image URL:', imageUrl);
+    
+    const modal = document.getElementById('edit-news-modal');
+    const idInput = document.getElementById('edit-news-id');
+    const titleInput = document.getElementById('edit-news-title');
+    const contentInput = document.getElementById('edit-news-content');
+    const currentImageDiv = document.getElementById('edit-news-current-image');
+    
+    if (!modal || !idInput || !titleInput || !contentInput) {
+        console.error('❌ Missing modal elements');
+        return;
+    }
+    
+    // Set values
+    idInput.value = id;
+    titleInput.value = title;
+    contentInput.value = content;
+    
+    console.log('✅ Form populated - ID:', idInput.value, 'Title:', titleInput.value);
+    
+    // Show current image if exists
+    if (imageUrl && imageUrl !== 'null' && imageUrl !== '' && imageUrl !== 'undefined') {
+        currentImageDiv.innerHTML = `
+            <p style="color: #888; font-size: 0.85rem; margin-bottom: 5px;">Current image:</p>
+            <img src="${imageUrl}" style="max-height: 80px; border-radius: 4px; border: 1px solid #444;">
+        `;
+    } else {
+        currentImageDiv.innerHTML = '<p style="color: #666; font-size: 0.85rem;">No image attached</p>';
+    }
+    
+    modal.style.display = 'flex';
+    console.log('✅ Modal opened successfully');
+};
+
+// Close Edit News Modal
+const closeEditNewsModalBtn = document.getElementById('close-edit-news-modal');
+if (closeEditNewsModalBtn) {
+    closeEditNewsModalBtn.addEventListener('click', () => {
+        console.log('❌ Closing edit news modal');
+        const modal = document.getElementById('edit-news-modal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.getElementById('edit-news-form').reset();
+        }
+    });
+}
+
+// Edit News Form Submit
+const editNewsForm = document.getElementById('edit-news-form');
+if (editNewsForm) {
+    editNewsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const id = document.getElementById('edit-news-id').value;
+        const title = document.getElementById('edit-news-title').value;
+        const content = document.getElementById('edit-news-content').value;
+        const imageFile = document.getElementById('edit-news-image').files[0];
+        
+        console.log('💾 Submitting news edit:', { id, title, content, hasNewImage: !!imageFile });
+        
+        const submitBtn = editNewsForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Updating...';
+        
+        try {
+            const updateData = { title, content };
+            
+            // Upload new image if selected
+            if (imageFile) {
+                submitBtn.innerHTML = 'Uploading Image...';
+                const fileName = `news-${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+                
+                console.log('📤 Uploading image:', fileName);
+                
+                const { error: uploadError } = await supabase.storage
+                    .from('news-images')
+                    .upload(fileName, imageFile);
+                
+                if (uploadError) throw new Error('Image upload failed: ' + uploadError.message);
+                
+                const { data: urlData } = supabase.storage
+                    .from('news-images')
+                    .getPublicUrl(fileName);
+                
+                updateData.image_url = urlData.publicUrl;
+                console.log('✅ Image uploaded:', urlData.publicUrl);
+            }
+            
+            // Update news item
+            console.log('🔄 Updating news in database...', updateData);
+            
+            const { error: updateError } = await supabase
+                .from('news')
+                .update(updateData)
+                .eq('id', id);
+            
+            if (updateError) {
+                console.error('❌ Update error:', updateError);
+                throw updateError;
+            }
+            
+            // Success
+            console.log('✅ News updated successfully!');
+            alert('News updated successfully!');
+            document.getElementById('edit-news-modal').style.display = 'none';
+            editNewsForm.reset();
+            loadAdminNews();
+            loadNewsSlider();
+            
+        } catch (err) {
+            console.error(err);
+            alert(err.message || 'Error updating news');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    });
 }
 
 // Global scope for delete function (for onclick)
@@ -362,11 +518,15 @@ window.deleteNews = async (id) => {
 if (adminNewsForm) {
     adminNewsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const title = document.getElementById('news-title').value;
         const content = newsContentInput.value;
         const newsImageInput = document.getElementById('news-image-input');
         const imageFile = newsImageInput ? newsImageInput.files[0] : null;
 
-        if (!content) return;
+        if (!title || !content) {
+            alert('Трябва заглавие и съдържание!');
+            return;
+        }
 
         const submitBtn = adminNewsForm.querySelector('button[type="submit"]');
         const originalBtnText = submitBtn.innerHTML;
@@ -398,6 +558,7 @@ if (adminNewsForm) {
             const { error: insertError } = await supabase
                 .from('news')
                 .insert([{ 
+                    title: title,
                     content: content, 
                     image_url: imageUrl 
                 }]);
@@ -405,6 +566,7 @@ if (adminNewsForm) {
             if (insertError) throw insertError;
 
             // Success
+            document.getElementById('news-title').value = '';
             newsContentInput.value = '';
             if (newsImageInput) newsImageInput.value = '';
             loadAdminNews();
@@ -421,49 +583,42 @@ if (adminNewsForm) {
     }); // End submit listener
 }
 
-// News Slider Logic
+// Hero News Slider Logic
 async function loadNewsSlider() {
     console.log('🔄 loadNewsSlider called');
     
-    if (!newsSlider) {
-        console.error('❌ News slider element (#news-slider) not found in DOM');
+    if (!heroNewsContainer) {
+        console.error('❌ Hero news container (#hero-news-container) not found in DOM');
         return;
     }
     
-    console.log('✅ News slider element found:', newsSlider);
+    console.log('✅ Hero news container found:', heroNewsContainer);
     
-    // Initial fetch - Include both content and image_url
+    // Fetch news with title and images
     const { data: newsItems, error } = await supabase
         .from('news')
-        .select('content, image_url, created_at')
+        .select('id, title, content, image_url, created_at')
         .order('created_at', { ascending: false })
         .limit(10);
 
     console.log('📥 Fetched news:', newsItems);
     console.log('❓ Error:', error);
 
-    // Handle errors or empty data
+    // Handle errors
     if (error) {
         console.error('❌ Error fetching news from Supabase:', error);
-        newsSlider.innerHTML = `
-            <div class="news-item">
-                <span class="breaking-tag">ERROR</span>
-                <span class="news-content">Unable to load news feed</span>
-            </div>`;
+        setHeroContent('ERROR', 'Unable to load market intelligence', null);
         return;
     }
 
+    // Handle empty state
     if (!newsItems || newsItems.length === 0) {
         console.warn('⚠️ No news items found in database');
-        newsSlider.innerHTML = `
-            <div class="news-item">
-                <span class="breaking-tag">STATUS</span>
-                <span class="news-content">AI Market Analysis System Online...</span>
-            </div>`;
+        setHeroContent('STATUS', 'AI Market Analysis System Online', null);
         return;
     }
 
-    console.log(`✅ ${newsItems.length} news item(s) loaded, starting slider`);
+    console.log(`✅ ${newsItems.length} news item(s) loaded, starting hero slider`);
 
     let currentIndex = 0;
     
@@ -472,41 +627,72 @@ async function loadNewsSlider() {
         console.log(`🔄 Cycling to news item ${currentIndex}:`, item);
         
         // Fade out
-        newsSlider.style.opacity = '0';
-        newsSlider.style.transition = 'opacity 0.5s ease-in-out';
+        heroNewsContainer.style.opacity = '0';
         
         setTimeout(() => {
-            // Build image HTML if image_url exists
-            const imageHtml = item.image_url 
-                ? `<img src="${item.image_url}" alt="News" style="max-height: 35px; margin-right: 10px; border-radius: 3px; vertical-align: middle;">` 
-                : '';
+            // Set background image or fallback
+            if (item.image_url) {
+                heroNewsContainer.style.backgroundImage = `url('${item.image_url}')`;
+                heroNewsContainer.style.backgroundColor = '#000';
+            } else {
+                // Tech grid fallback
+                heroNewsContainer.style.backgroundImage = `
+                    linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px)
+                `;
+                heroNewsContainer.style.backgroundSize = '50px 50px';
+                heroNewsContainer.style.backgroundColor = '#0a0a0a';
+            }
             
-            // Update content
-            newsSlider.innerHTML = `
-                <div class="news-item">
-                    <span class="breaking-tag">BREAKING</span>
-                    ${imageHtml}
-                    <span class="news-content">${item.content}</span>
-                </div>
-            `;
+            // Update text content with clickable title
+            const contentDiv = heroNewsContainer.querySelector('.hero-news-content');
+            if (contentDiv) {
+                contentDiv.innerHTML = `
+                    <span class="breaking-badge">BREAKING</span>
+                    <h1 class="hero-news-headline" style="cursor: pointer;" onclick="showNewsDetails('${item.id}')">${item.title || item.content}</h1>
+                `;
+            }
             
             // Fade in
-            newsSlider.style.opacity = '1';
+            heroNewsContainer.style.opacity = '1';
             
-            // Increment index (loop back to 0 if at end)
+            // Increment index
             currentIndex = (currentIndex + 1) % newsItems.length;
-        }, 500); // Wait for fade out
+        }, 800); // Wait for fade out
     }
 
     // Start cycle immediately
     cycleNews();
     
-    // Only set interval if there's more than 1 item
+    // Set interval for multiple items (7 seconds)
     if (newsItems.length > 1) {
-        setInterval(cycleNews, 5000);
-        console.log('✅ Auto-cycle enabled (5s interval)');
+        setInterval(cycleNews, 7000);
+        console.log('✅ Auto-cycle enabled (7s interval)');
     } else {
         console.log('ℹ️ Only 1 news item, auto-cycle disabled');
+    }
+}
+
+// Helper function to set hero content
+function setHeroContent(badge, headline, imageUrl) {
+    if (!heroNewsContainer) return;
+    
+    if (imageUrl) {
+        heroNewsContainer.style.backgroundImage = `url('${imageUrl}')`;
+    } else {
+        heroNewsContainer.style.backgroundImage = `
+            linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px)
+        `;
+        heroNewsContainer.style.backgroundSize = '50px 50px';
+    }
+    
+    const contentDiv = heroNewsContainer.querySelector('.hero-news-content');
+    if (contentDiv) {
+        contentDiv.innerHTML = `
+            <span class="breaking-badge">${badge}</span>
+            <h1 class="hero-news-headline">${headline}</h1>
+        `;
     }
 }
 
@@ -779,6 +965,71 @@ function showPredictionDetails(pred) {
     });
 }
 
+// Show full news article
+window.showNewsDetails = async function(newsId) {
+    const newsDetails = document.getElementById('news-details');
+    const predictionsSection = document.getElementById('predictions-section');
+    const adminSectionEl = document.getElementById('admin-section');
+    const heroSection = document.querySelector('.hero');
+
+    console.log('📰 Loading news details for ID:', newsId);
+
+    // Hide all sections
+    if (predictionsSection) predictionsSection.style.display = 'none';
+    if (adminSectionEl) adminSectionEl.style.display = 'none';
+    if (heroSection) heroSection.style.display = 'none';
+
+    // Fetch news item
+    const { data: newsItem, error } = await supabase
+        .from('news')
+        .select('*')
+        .eq('id', newsId)
+        .single();
+
+    if (error || !newsItem) {
+        console.error('❌ Error fetching news:', error);
+        alert('Error loading news article');
+        backToHome();
+        return;
+    }
+
+    console.log('✅ News loaded:', newsItem);
+
+    // Format date
+    const date = new Date(newsItem.created_at);
+    const formattedDate = date.toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+
+    // Inject markup into #news-details
+    newsDetails.innerHTML = `
+        <div class="details-container" style="padding-top: 140px;">
+            <div class="details-back-row">
+                <button class="back-to-feed-btn" onclick="backToHome()">&larr; Back to Home</button>
+            </div>
+            <div class="details-grid">
+                <div class="details-left${newsItem.image_url ? '' : ' no-image'}">
+                    ${newsItem.image_url ? `<img src="${newsItem.image_url}" alt="${newsItem.title}">` : ''}
+                </div>
+                <div class="details-right">
+                    <span class="details-category-tag">BREAKING NEWS</span>
+                    <h1 class="details-asset" style="text-transform: none;">${newsItem.title || newsItem.content.substring(0, 100)}</h1>
+                    <div class="details-meta">
+                        <span class="details-date">${formattedDate}</span>
+                    </div>
+                    <div class="details-divider"></div>
+                    <p class="details-prediction-text" style="white-space: pre-wrap;">${newsItem.content}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Show section with fade-in animation
+    newsDetails.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 // Restore the feed — hide details, show main sections
 function backToFeed() {
     predictionDetails.classList.remove('active');
@@ -798,6 +1049,37 @@ function backToFeed() {
     if (predictionsSection) {
         predictionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+}
+
+// Back to home - hide both prediction and news details
+function backToHome() {
+    // Hide prediction details
+    const predictionDetails = document.getElementById('prediction-details');
+    if (predictionDetails) {
+        predictionDetails.classList.remove('active');
+        predictionDetails.innerHTML = '';
+    }
+
+    // Hide news details
+    const newsDetails = document.getElementById('news-details');
+    if (newsDetails) {
+        newsDetails.classList.remove('active');
+        newsDetails.innerHTML = '';
+    }
+
+    // Show all sections
+    const predictionsSection = document.getElementById('predictions-section');
+    if (predictionsSection) predictionsSection.style.display = '';
+
+    const heroSection = document.querySelector('.hero');
+    if (heroSection) heroSection.style.display = '';
+
+    const isAdmin = localStorage.getItem('userRole') === 'admin';
+    const adminSectionEl = document.getElementById('admin-section');
+    if (adminSectionEl) adminSectionEl.style.display = isAdmin ? 'block' : 'none';
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Async function to execute the actual delete after confirmation

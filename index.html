@@ -43,19 +43,16 @@
     </nav>
 
     <header class="hero">
-        <div class="container">
-            <h1 class="hero-headline">DECODE THE MARKETS <br> WITH <span class="highlight">AI PRECISION</span></h1>
-            <div id="news-slider" class="news-slider">
-                <div class="news-item">
-                    <span class="breaking-tag">BREAKING NEWS</span>
-                    <span class="news-content">AI System Initializing...</span>
-                </div>
+        <div id="hero-news-container" class="hero-news-container">
+            <div class="hero-news-overlay"></div>
+            <div class="hero-news-content">
+                <span class="breaking-badge">BREAKING</span>
+                <h1 class="hero-news-headline">Loading Market Intelligence...</h1>
             </div>
             <div class="hero-cta">
                 <a href="#start-trading" class="btn btn-large btn-neon">GET PREDICTIONS</a>
             </div>
         </div>
-        <div class="hero-background-grid"></div>
     </header>
 
     <!-- Admin Panel Section -->
@@ -68,8 +65,12 @@
                 <h3 class="panel-subtitle">Manage News</h3>
                 <form id="admin-news-form" class="admin-form">
                     <div class="form-group">
+                        <label for="news-title">News Title</label>
+                        <input type="text" id="news-title" name="title" placeholder="Enter headline..." required style="width: 100%; padding: 10px; margin-top: 5px; background: #0d0d0d; border: 1px solid #444; color: #e0e0e0; font-size: 1rem;">
+                    </div>
+                    <div class="form-group">
                         <label for="news-content">News Content</label>
-                        <textarea id="news-content" name="content" rows="3" placeholder="Enter breaking news..." required></textarea>
+                        <textarea id="news-content" name="content" rows="3" placeholder="Enter full article text..." required></textarea>
                     </div>
                     <div class="form-group">
                         <label for="news-image-input">News Image (Optional)</label>
@@ -183,6 +184,36 @@
         </div>
     </div>
 
+    <!-- Edit News Modal -->
+    <div id="edit-news-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#1a1a1a; border:2px solid #333; padding:40px; width:90%; max-width:580px; position:relative; max-height:90vh; overflow-y:auto;">
+            <button type="button" id="close-edit-news-modal" style="position:absolute; top:12px; right:18px; background:none; border:none; color:#e0e0e0; font-size:1.8rem; cursor:pointer; line-height:1;">&times;</button>
+            <h2 style="color:#00ff88; font-size:1.6rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:28px;">Edit News</h2>
+
+            <form id="edit-news-form">
+                <input type="hidden" id="edit-news-id">
+
+                <div style="margin-bottom:18px;">
+                    <label style="display:block; color:#aaa; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">News Title</label>
+                    <input type="text" id="edit-news-title" required style="width:100%; padding:12px; background:#0d0d0d; border:1px solid #444; color:#e0e0e0; font-size:1rem; border-radius:0; outline:none; box-sizing:border-box;">
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <label style="display:block; color:#aaa; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">News Content</label>
+                    <textarea id="edit-news-content" rows="4" required style="width:100%; padding:12px; background:#0d0d0d; border:1px solid #444; color:#e0e0e0; font-size:1rem; border-radius:0; outline:none; resize:vertical; box-sizing:border-box;"></textarea>
+                </div>
+
+                <div style="margin-bottom:28px;">
+                    <label style="display:block; color:#aaa; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Image <span style="color:#666; font-size:0.8rem;">(optional — leave empty to keep current)</span></label>
+                    <input type="file" id="edit-news-image" accept="image/*" style="width:100%; padding:10px; background:#0d0d0d; border:1px solid #444; color:#aaa; font-size:0.9rem; box-sizing:border-box; cursor:pointer;">
+                    <div id="edit-news-current-image" style="margin-top:10px;"></div>
+                </div>
+
+                <button type="submit" style="width:100%; padding:14px; background:#00ff88; color:#050505; font-weight:800; font-size:1rem; text-transform:uppercase; letter-spacing:1px; border:none; cursor:pointer;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Edit Prediction Modal -->
     <div id="edit-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center;">
         <div style="background:#1a1a1a; border:2px solid #333; padding:40px; width:90%; max-width:580px; position:relative; max-height:90vh; overflow-y:auto;">
@@ -234,6 +265,9 @@
 
     <!-- Prediction Details Section (populated dynamically by JS) -->
     <section id="prediction-details"></section>
+
+    <!-- News Details Section (populated dynamically by JS) -->
+    <section id="news-details"></section>
 
     <script>
         const hamburger = document.querySelector(".hamburger");

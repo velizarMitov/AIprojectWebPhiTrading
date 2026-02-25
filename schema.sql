@@ -153,6 +153,75 @@ CREATE INDEX IF NOT EXISTS idx_predictions_tier ON predictions(required_tier);
 CREATE INDEX IF NOT EXISTS idx_predictions_created_at ON predictions(created_at DESC);
 
 -- ============================================
+-- NEWS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS news (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    content TEXT NOT NULL,
+    image_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable Row Level Security
+ALTER TABLE news ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Everyone can read news
+CREATE POLICY "Anyone can view news"
+    ON news
+    FOR SELECT
+    TO authenticated, anon
+    USING (true);
+
+-- RLS Policy: Only admins can INSERT news
+CREATE POLICY "Admins can insert news"
+    ON news
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role = 'admin'
+        )
+    );
+
+-- RLS Policy: Only admins can UPDATE news
+CREATE POLICY "Admins can update news"
+    ON news
+    FOR UPDATE
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role = 'admin'
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role = 'admin'
+        )
+    );
+
+-- RLS Policy: Only admins can DELETE news
+CREATE POLICY "Admins can delete news"
+    ON news
+    FOR DELETE
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role = 'admin'
+        )
+    );
+
+-- Index for performance
+CREATE INDEX IF NOT EXISTS idx_news_created_at ON news(created_at DESC);
+
+-- ============================================
 -- SEED DATA (Optional - for testing)
 -- ============================================
 -- Uncomment below to add sample predictions
