@@ -390,36 +390,57 @@ if (adminPredictionForm) {
     });
 }
 
-// Global Event Delegation for Edit and Delete
-document.body.addEventListener('click', async (e) => {
+// Async function to execute the actual delete after confirmation
+async function executeDelete(id) {
+    const { data, error } = await supabase
+        .from('predictions')
+        .delete()
+        .eq('id', id);
+
+    console.log('Delete response:', error, data);
+
+    if (error) {
+        console.error('Error deleting prediction:', error);
+        Swal.fire({ icon: 'error', title: 'Error', text: error.message, background: '#121212', color: '#e0e0e0' });
+    } else {
+        Swal.fire({ icon: 'success', title: 'Deleted!', text: 'The prediction has been removed.', background: '#121212', color: '#e0e0e0', confirmButtonColor: '#00ff88', confirmButtonText: 'OK' });
+        loadPredictions();
+    }
+}
+
+// Async function to execute the edit modal population
+async function executeEdit(id) {
+    const prediction = currentPredictions.find(p => String(p.id) === String(id));
+    console.log('Found prediction:', prediction);
+
+    if (prediction) {
+        document.getElementById('edit-prediction-id').value = prediction.id;
+        document.getElementById('edit-category').value = prediction.category;
+        document.getElementById('edit-asset').value = prediction.asset;
+        document.getElementById('edit-text').value = prediction.prediction_text;
+        document.getElementById('edit-tier').value = prediction.required_tier;
+        document.getElementById('edit-image').value = '';
+        const previewEl = document.getElementById('edit-current-image');
+        if (prediction.image_url) {
+            previewEl.innerHTML = `<img src="${prediction.image_url}" alt="current" style="max-width:100%; max-height:120px; border:1px solid #333; margin-top:4px;">`;
+        } else {
+            previewEl.innerHTML = '<span style="color:#666; font-size:0.85rem;">No current image</span>';
+        }
+        document.getElementById('edit-modal').style.display = 'flex';
+    } else {
+        console.error('Prediction not found in currentPredictions for id:', id);
+    }
+}
+
+// Global Event Delegation — NON-async so confirm/alert are never blocked
+document.body.addEventListener('click', (e) => {
     // Handle Edit Button Click
     const editBtn = e.target.closest('.edit-btn');
     if (editBtn) {
         const id = editBtn.getAttribute('data-id');
         console.log('Edit clicked for ID:', id);
         console.log('currentPredictions length:', currentPredictions.length);
-
-        const prediction = currentPredictions.find(p => String(p.id) === String(id));
-        console.log('Found prediction:', prediction);
-
-        if (prediction) {
-            document.getElementById('edit-prediction-id').value = prediction.id;
-            document.getElementById('edit-category').value = prediction.category;
-            document.getElementById('edit-asset').value = prediction.asset;
-            document.getElementById('edit-text').value = prediction.prediction_text;
-            document.getElementById('edit-tier').value = prediction.required_tier;
-            // Reset file input and show current image preview
-            document.getElementById('edit-image').value = '';
-            const previewEl = document.getElementById('edit-current-image');
-            if (prediction.image_url) {
-                previewEl.innerHTML = `<img src="${prediction.image_url}" alt="current" style="max-width:100%; max-height:120px; border:1px solid #333; margin-top:4px;">`;
-            } else {
-                previewEl.innerHTML = '<span style="color:#666; font-size:0.85rem;">No current image</span>';
-            }
-            document.getElementById('edit-modal').style.display = 'flex';
-        } else {
-            console.error('Prediction not found in currentPredictions for id:', id);
-        }
+        executeEdit(id);
         return;
     }
 
@@ -433,7 +454,22 @@ document.body.addEventListener('click', async (e) => {
     const deleteBtn = e.target.closest('.delete-btn');
     if (deleteBtn) {
         const id = deleteBtn.getAttribute('data-id');
-        await deletePrediction(id);
+        Swal.fire({
+            title: 'Delete Prediction?',
+            text: 'This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ff4444',
+            cancelButtonColor: '#333',
+            confirmButtonText: 'Yes, delete it',
+            cancelButtonText: 'Cancel',
+            background: '#121212',
+            color: '#e0e0e0'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                executeDelete(id);
+            }
+        });
     }
 });
 
@@ -483,9 +519,9 @@ if (editPredictionForm) {
 
         if (error) {
             console.error('Error updating prediction:', error);
-            alert('Error updating prediction: ' + error.message);
+            Swal.fire({ icon: 'error', title: 'Update Failed', text: error.message, background: '#121212', color: '#e0e0e0' });
         } else {
-            alert('✅ Prediction updated successfully!');
+            Swal.fire({ icon: 'success', title: 'Updated!', text: 'Prediction saved successfully.', background: '#121212', color: '#e0e0e0', confirmButtonColor: '#00ff88', confirmButtonText: 'OK' });
             document.getElementById('edit-modal').style.display = 'none';
             editPredictionForm.reset();
             loadPredictions();
