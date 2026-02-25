@@ -153,6 +153,13 @@ ul {
     color: var(--accent-color);
 }
 
+.nav-links li a.active {
+    opacity: 1;
+    color: var(--accent-color);
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: 2px;
+}
+
 .nav-buttons {
     display: flex;
     gap: 15px;
@@ -823,54 +830,60 @@ ul {
 /* =====================
    RESPONSIVE
    ===================== */
-/* Responsive Design */
 @media (max-width: 960px) {
     .hamburger {
         display: block;
-        z-index: 1001;
+        z-index: 1002;
     }
 
-    .nav-links, .nav-buttons {
-        position: fixed;
-        right: -100%;
-        top: 80px;
-        flex-direction: column;
-        background-color: var(--surface-color);
-        width: 100%;
-        text-align: center;
-        transition: 0.3s;
-        padding-bottom: 20px;
-        border-bottom: 1px solid var(--border-color);
-        gap: 0;
-    }
-
-    .nav-links.active, .nav-buttons.active {
-        right: 0;
-    }
-    
-    .nav-buttons {
-        top: auto;
-        bottom: 0; 
-        position: fixed;
-    }
-
+    /* Hide desktop nav links and buttons — both slide in from right */
     .nav-links {
-        height: calc(100vh - 80px); 
-        top: 80px;
-        display: flex;
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         gap: 40px;
         background: var(--bg-color);
+        z-index: 999;
+        padding-bottom: 160px; /* space for auth buttons at bottom */
     }
 
-    .nav-buttons {
-        display: none; 
+    .nav-links.active {
+        display: flex;
     }
 
     .nav-links li a {
         font-size: 1.5rem;
+    }
+
+    /* Auth buttons bar — fixed at bottom over the menu */
+    .nav-buttons {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 20px 0 36px;
+        background: rgba(5, 5, 5, 0.97);
+        border-top: 1px solid var(--border-color);
+        z-index: 1001;
+    }
+
+    .nav-buttons.active {
+        display: flex;
+    }
+
+    .nav-buttons .btn {
+        width: 70%;
+        text-align: center;
     }
 
     /* Hamburger Animation */

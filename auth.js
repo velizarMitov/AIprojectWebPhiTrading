@@ -2,6 +2,7 @@ import { supabase } from './supabase.js';
 
 // Global State
 let currentPredictions = [];
+let currentCategoryFilter = null;
 
 // DOM Elements
 const authModal = document.getElementById('auth-modal');
@@ -86,29 +87,43 @@ async function loadPredictions() {
     // Store in global state
     currentPredictions = predictions || [];
 
-    // Define tier hierarchy
+    applyFiltersAndRender();
+}
+
+// Apply tier + category filters and render — call this whenever filters change
+function applyFiltersAndRender() {
+    const userTier = localStorage.getItem('userTier');
+    if (!userTier || !predictionsFeed) return;
+
     const tierHierarchy = {
         'Bronze': ['Bronze'],
         'Silver': ['Bronze', 'Silver'],
         'Gold': ['Bronze', 'Silver', 'Gold']
     };
-
-    // Filter predictions based on user tier
     const allowedTiers = tierHierarchy[userTier] || ['Bronze'];
-    const filteredPredictions = predictions.filter(pred => 
+
+    // Apply tier filter
+    let filtered = currentPredictions.filter(pred =>
         allowedTiers.includes(pred.required_tier)
     );
 
-    // Check if user is admin
+    // Apply category filter (if active)
+    if (currentCategoryFilter) {
+        filtered = filtered.filter(pred =>
+            pred.category.toLowerCase() === currentCategoryFilter.toLowerCase()
+        );
+    }
+
     const isAdmin = localStorage.getItem('userRole') === 'admin';
 
-    // Render predictions
-    if (filteredPredictions.length === 0) {
-        predictionsFeed.innerHTML = '<div class="no-predictions">No predictions available for your tier.</div>';
+    if (filtered.length === 0) {
+        predictionsFeed.innerHTML = `<div class="no-predictions">No ${
+            currentCategoryFilter ? currentCategoryFilter + ' ' : ''
+        }predictions available for your tier.</div>`;
         return;
     }
 
-    predictionsFeed.innerHTML = filteredPredictions.map(pred => {
+    predictionsFeed.innerHTML = filtered.map(pred => {
         const date = new Date(pred.created_at);
         const formattedDate = date.toLocaleDateString('en-US', { 
             month: 'short', 
@@ -146,7 +161,7 @@ async function loadPredictions() {
         `;
     }).join('');
 
-    console.log(`Loaded ${filteredPredictions.length} predictions for ${userTier} tier`);
+    console.log(`Rendered ${filtered.length} predictions (tier: ${userTier}, category: ${currentCategoryFilter || 'all'})`);
 }
 
 // Register function
@@ -310,6 +325,34 @@ tabBtns.forEach(btn => {
 loginForm.addEventListener('submit', handleLogin);
 registerForm.addEventListener('submit', handleRegister);
 logoutBtn.addEventListener('click', handleLogout);
+
+// Category nav links — filter predictions without re-fetching
+document.querySelectorAll('[data-category]').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const category = link.getAttribute('data-category');
+
+        // Toggle: clicking active category resets to all
+        if (currentCategoryFilter === category) {
+            currentCategoryFilter = null;
+        } else {
+            currentCategoryFilter = category;
+        }
+
+        // Update active class on nav links
+        document.querySelectorAll('[data-category]').forEach(l => l.classList.remove('active'));
+        if (currentCategoryFilter) link.classList.add('active');
+
+        // Re-render with new filter (no Supabase call needed)
+        applyFiltersAndRender();
+
+        // Scroll to predictions feed
+        const predictionsSection = document.getElementById('predictions-section');
+        if (predictionsSection) {
+            predictionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+});
 
 // Admin Panel Button - Scroll to Admin Section
 if (adminPanelBtn) {

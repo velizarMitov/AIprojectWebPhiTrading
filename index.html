@@ -18,10 +18,10 @@
         <div class="container">
             <div class="logo">PHI<span class="accent">.TRADING</span></div>
             <ul class="nav-links">
-                <li><a href="#forex">Forex</a></li>
-                <li><a href="#crypto">Crypto</a></li>
-                <li><a href="#stocks">Stocks</a></li>
-                <li><a href="#ml-predictions">ML Predictions</a></li>
+                <li><a href="#" data-category="Forex">Forex</a></li>
+                <li><a href="#" data-category="Crypto">Crypto</a></li>
+                <li><a href="#" data-category="Stocks">Stocks</a></li>
+                <li><a href="#" data-category="ML Predictions">ML Predictions</a></li>
             </ul>
             <div class="nav-buttons">
                 <a href="#login" id="show-login" class="btn btn-secondary">Login</a>
@@ -206,15 +206,30 @@
     <section id="prediction-details"></section>
 
     <script>
-        // Simple hamburger menu toggle
         const hamburger = document.querySelector(".hamburger");
         const navLinks = document.querySelector(".nav-links");
         const navButtons = document.querySelector(".nav-buttons");
+
+        function closeMenu() {
+            navLinks.classList.remove("active");
+            navButtons.classList.remove("active");
+            hamburger.classList.remove("toggle");
+        }
 
         hamburger.addEventListener("click", () => {
             navLinks.classList.toggle("active");
             navButtons.classList.toggle("active");
             hamburger.classList.toggle("toggle");
+        });
+
+        // Close menu when a nav link is clicked
+        navLinks.querySelectorAll("a").forEach(link => {
+            link.addEventListener("click", closeMenu);
+        });
+
+        // Close menu when an auth button is clicked
+        navButtons.querySelectorAll(".btn, button").forEach(btn => {
+            btn.addEventListener("click", closeMenu);
         });
     </script>
     <script type="module" src="auth.js"></script>
