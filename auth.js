@@ -1052,7 +1052,7 @@ function backToFeed() {
 }
 
 // Back to home - hide both prediction and news details
-function backToHome() {
+window.backToHome = function() {
     // Hide prediction details
     const predictionDetails = document.getElementById('prediction-details');
     if (predictionDetails) {
