@@ -313,25 +313,31 @@ async function loadAdminNews() {
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error('Error fetching news:', error);
+        console.error('Error fetching news for admin panel:', error);
+        newsListContainer.innerHTML = '<p style="color: #ff4444;">Error loading news list</p>';
         return;
     }
 
-    newsListContainer.innerHTML = news.map(item => `
-        <div style="background: #1a1a1a; padding: 10px; margin-bottom: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #e0e0e0; font-size: 0.9rem;">${item.content}</span>
-            <button onclick="deleteNews('${item.id}')" style="background: #ff4444; border: none; color: white; padding: 5px 10px; cursor: pointer;">Del</button>
-        </div>
-    `).join('');
-    
-    // Bind delete buttons dynamically
-    const buttons = newsListContainer.querySelectorAll('button');
-    buttons.forEach(btn => {
-        btn.onclick = function() {
-            // Extract ID from the parent loop or attach it directly
-            // Simpler: re-attach event listeners properly
-        }
-    });
+    if (!news || news.length === 0) {
+        newsListContainer.innerHTML = '<p style="color: #888;">No news items yet. Add some above!</p>';
+        return;
+    }
+
+    newsListContainer.innerHTML = news.map(item => {
+        const imagePreview = item.image_url 
+            ? `<img src="${item.image_url}" style="max-height: 30px; margin-right: 10px; border-radius: 3px;">` 
+            : '';
+        
+        return `
+            <div style="background: #1a1a1a; padding: 10px; margin-bottom: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <div style="display: flex; align-items: center; flex: 1;">
+                    ${imagePreview}
+                    <span style="color: #e0e0e0; font-size: 0.9rem;">${item.content}</span>
+                </div>
+                <button onclick="deleteNews('${item.id}')" style="background: #ff4444; border: none; color: white; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-weight: 600;">Del</button>
+            </div>
+        `;
+    }).join('');
 }
 
 // Global scope for delete function (for onclick)
@@ -417,51 +423,91 @@ if (adminNewsForm) {
 
 // News Slider Logic
 async function loadNewsSlider() {
-    if (!newsSlider) return;
+    console.log('🔄 loadNewsSlider called');
     
-    // Initial fetch
+    if (!newsSlider) {
+        console.error('❌ News slider element (#news-slider) not found in DOM');
+        return;
+    }
+    
+    console.log('✅ News slider element found:', newsSlider);
+    
+    // Initial fetch - Include both content and image_url
     const { data: newsItems, error } = await supabase
         .from('news')
-        .select('content')
+        .select('content, image_url, created_at')
         .order('created_at', { ascending: false })
         .limit(10);
 
-    if (error || !newsItems || newsItems.length === 0) {
+    console.log('📥 Fetched news:', newsItems);
+    console.log('❓ Error:', error);
+
+    // Handle errors or empty data
+    if (error) {
+        console.error('❌ Error fetching news from Supabase:', error);
         newsSlider.innerHTML = `
-            <div class="news-item active">
+            <div class="news-item">
+                <span class="breaking-tag">ERROR</span>
+                <span class="news-content">Unable to load news feed</span>
+            </div>`;
+        return;
+    }
+
+    if (!newsItems || newsItems.length === 0) {
+        console.warn('⚠️ No news items found in database');
+        newsSlider.innerHTML = `
+            <div class="news-item">
                 <span class="breaking-tag">STATUS</span>
                 <span class="news-content">AI Market Analysis System Online...</span>
             </div>`;
         return;
     }
 
+    console.log(`✅ ${newsItems.length} news item(s) loaded, starting slider`);
+
     let currentIndex = 0;
     
     function cycleNews() {
         const item = newsItems[currentIndex];
+        console.log(`🔄 Cycling to news item ${currentIndex}:`, item);
         
         // Fade out
         newsSlider.style.opacity = '0';
+        newsSlider.style.transition = 'opacity 0.5s ease-in-out';
         
         setTimeout(() => {
+            // Build image HTML if image_url exists
+            const imageHtml = item.image_url 
+                ? `<img src="${item.image_url}" alt="News" style="max-height: 35px; margin-right: 10px; border-radius: 3px; vertical-align: middle;">` 
+                : '';
+            
             // Update content
             newsSlider.innerHTML = `
                 <div class="news-item">
                     <span class="breaking-tag">BREAKING</span>
+                    ${imageHtml}
                     <span class="news-content">${item.content}</span>
                 </div>
             `;
+            
             // Fade in
             newsSlider.style.opacity = '1';
             
-            // Increment index
+            // Increment index (loop back to 0 if at end)
             currentIndex = (currentIndex + 1) % newsItems.length;
         }, 500); // Wait for fade out
     }
 
-    // Start cycle
+    // Start cycle immediately
     cycleNews();
-    setInterval(cycleNews, 5000);
+    
+    // Only set interval if there's more than 1 item
+    if (newsItems.length > 1) {
+        setInterval(cycleNews, 5000);
+        console.log('✅ Auto-cycle enabled (5s interval)');
+    } else {
+        console.log('ℹ️ Only 1 news item, auto-cycle disabled');
+    }
 }
 
 // Initialize
