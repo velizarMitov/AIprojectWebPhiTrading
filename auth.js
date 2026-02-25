@@ -395,15 +395,12 @@ if (adminPredictionForm) {
 function showPredictionDetails(pred) {
     const predictionsSection = document.getElementById('predictions-section');
     const adminSectionEl = document.getElementById('admin-section');
+    const heroSection = document.querySelector('.hero');
 
-    // Hide feed and admin panel
+    // Hide feed, admin panel and hero
     if (predictionsSection) predictionsSection.style.display = 'none';
     if (adminSectionEl) adminSectionEl.style.display = 'none';
-
-    // Build image block
-    const imageHtml = pred.image_url
-        ? `<div class="details-hero-image"><img src="${pred.image_url}" alt="${pred.asset}"></div>`
-        : '';
+    if (heroSection) heroSection.style.display = 'none';
 
     // Tier badge class
     const tierClass = 'tier-' + pred.required_tier.toLowerCase();
@@ -418,17 +415,23 @@ function showPredictionDetails(pred) {
     // Inject full markup into #prediction-details
     predictionDetails.innerHTML = `
         <div class="details-container">
-            ${imageHtml}
-            <div class="details-body">
+            <div class="details-back-row">
                 <button class="back-to-feed-btn" id="back-to-feed-btn">&larr; Back to Feed</button>
-                <span class="details-category-tag">${pred.category}</span>
-                <h1 class="details-asset">${pred.asset}</h1>
-                <div class="details-meta">
-                    <span class="details-tier-badge ${tierClass}">${pred.required_tier.toUpperCase()} TIER</span>
-                    <span class="details-date">${formattedDate}</span>
+            </div>
+            <div class="details-grid">
+                <div class="details-left${pred.image_url ? '' : ' no-image'}">
+                    ${pred.image_url ? `<img src="${pred.image_url}" alt="${pred.asset}">` : ''}
                 </div>
-                <div class="details-divider"></div>
-                <p class="details-prediction-text">${pred.prediction_text}</p>
+                <div class="details-right">
+                    <span class="details-category-tag">${pred.category}</span>
+                    <h1 class="details-asset">${pred.asset}</h1>
+                    <div class="details-meta">
+                        <span class="details-tier-badge ${tierClass}">${pred.required_tier.toUpperCase()} TIER</span>
+                        <span class="details-date">${formattedDate}</span>
+                    </div>
+                    <div class="details-divider"></div>
+                    <p class="details-prediction-text">${pred.prediction_text}</p>
+                </div>
             </div>
         </div>
     `;
@@ -445,6 +448,9 @@ function backToFeed() {
 
     const predictionsSection = document.getElementById('predictions-section');
     if (predictionsSection) predictionsSection.style.display = '';
+
+    const heroSection = document.querySelector('.hero');
+    if (heroSection) heroSection.style.display = '';
 
     const isAdmin = localStorage.getItem('userRole') === 'admin';
     const adminSectionEl = document.getElementById('admin-section');
@@ -503,6 +509,20 @@ document.body.addEventListener('click', (e) => {
     // Back to Feed button inside details view
     if (e.target.closest('#back-to-feed-btn')) {
         backToFeed();
+        return;
+    }
+
+    // Image lightbox — click image in details view to enlarge
+    if (e.target.closest('.details-left img')) {
+        const imgEl = e.target.closest('.details-left img');
+        const lightbox = document.createElement('div');
+        lightbox.className = 'img-lightbox';
+        lightbox.innerHTML = `<img src="${imgEl.src}" alt="${imgEl.alt}">`;
+        lightbox.addEventListener('click', () => lightbox.remove());
+        document.addEventListener('keydown', function escClose(ev) {
+            if (ev.key === 'Escape') { lightbox.remove(); document.removeEventListener('keydown', escClose); }
+        });
+        document.body.appendChild(lightbox);
         return;
     }
 
