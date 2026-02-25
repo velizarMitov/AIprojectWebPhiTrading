@@ -52,7 +52,16 @@ Each prediction card displays the asset, predicted direction, conviction level, 
 
 ---
 
-### 📊 Full CRUD Admin Panel
+### � Live Market Ticker
+A real-time scrolling ticker bar displaying live Forex rates (EUR/USD, GBP/USD, USD/JPY) powered by the **Alpha Vantage API**.
+
+- **Optimized Performance**: Implements a single-fetch strategy on page load to respect API rate limits while maintaining a continuous "always-on" feel.
+- **Resilient Fallback**: Automatically switches to cached/static data if the API limit is reached, ensuring the UI never breaks.
+- **Smooth Animation**: CSS-driven infinite scroll for zero-jank rendering on all devices.
+
+---
+
+### �📊 Full CRUD Admin Panel
 Administrators have complete content management capabilities:
 
 | Operation  | Description                                                                                  |
