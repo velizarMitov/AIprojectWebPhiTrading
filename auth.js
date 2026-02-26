@@ -8,9 +8,19 @@ const priceCache = {}; // { 'EUR/USD': { price: '1.0821', ts: Date.now() } }
 
 // Auth Check Helper - returns true if logged in, false otherwise
 async function checkAuthForPredictions() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        // Show SweetAlert and open login modal
+    try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+            console.error('Session check error:', error);
+        }
+        
+        if (session) {
+            console.log('User authenticated:', session.user.id);
+            return true;
+        }
+        
+        // No session - show login prompt
         Swal.fire({
             icon: 'info',
             title: 'Login Required',
@@ -21,8 +31,10 @@ async function checkAuthForPredictions() {
         });
         openModal('login');
         return false;
+    } catch (err) {
+        console.error('Auth check failed:', err);
+        return false;
     }
-    return true;
 }
 
 // DOM Elements
@@ -341,8 +353,37 @@ async function handleRegister(e) {
                 background: '#121212',
                 color: '#e0e0e0'
             });
+            return;
+        }
+        
+        console.log('Profile created successfully for user:', data.user.id);
+        registerForm.reset();
+        
+        // Check if session exists (instant access) or email confirmation is required
+        if (data.session) {
+            // Instant access - session granted immediately
+            console.log('Session granted immediately after registration');
+            closeModal();
+            
+            // Force refresh session to ensure auth state is current
+            await supabase.auth.refreshSession();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Welcome!',
+                text: 'Registration successful! You now have full access.',
+                confirmButtonColor: '#00ff88',
+                background: '#121212',
+                color: '#e0e0e0',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            
+            // Navigate to home view and refresh UI
+            switchView('home');
+            updateUIWithProfile(data.user);
         } else {
-            console.log('Profile created successfully for user:', data.user.id);
+            // Email confirmation required
             Swal.fire({
                 icon: 'success',
                 title: 'Registration Successful!',
@@ -351,7 +392,6 @@ async function handleRegister(e) {
                 background: '#121212',
                 color: '#e0e0e0'
             });
-            registerForm.reset();
         }
     }
 }
@@ -575,11 +615,17 @@ async function updateUIWithProfile(user) {
 }
 
 // Auth State Change Listener
-supabase.auth.onAuthStateChange((event, session) => {
+supabase.auth.onAuthStateChange(async (event, session) => {
     console.log('Auth state changed:', event, session?.user?.id);
     updateUI(session?.user ?? null);
     
-    if (event === 'SIGNED_IN' && session?.user) {
+    if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        // Refresh session to ensure we have the latest
+        const { data: { session: freshSession } } = await supabase.auth.getSession();
+        if (freshSession) {
+            console.log('Session confirmed for user:', freshSession.user.id);
+        }
+        
         // Call updateUIWithProfile when user signs in
         updateUIWithProfile(session.user);
         setTimeout(loadPredictions, 500);
