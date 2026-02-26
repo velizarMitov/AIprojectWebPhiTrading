@@ -10,7 +10,7 @@ const priceCache = {}; // { 'EUR/USD': { price: '1.0821', ts: Date.now() } }
 let isPredictionsLoading = false;
 let isNewsLoading = false;
 // Global Cropper Instance
-let cropperInstance = null;
+// let cropperInstance = null; // Replaced by window.currentCropper
 let currentCroppedImageUrl = null;
 
 // Auth Check Helper - returns true if logged in, false otherwise
@@ -848,7 +848,8 @@ window.deleteNews = async (id) => {
 // Post News
 if (adminNewsForm) {
 // --- IMAGE CROPPER LOGIC ---
-// cropperInstance and currentCroppedImageUrl are now global
+// We use window.currentCropper to ensure global accessibility and avoid scoping issues
+// currentCroppedImageUrl is global
 
 // DOM Elements
 const cropperModal = document.getElementById('cropper-modal');
@@ -878,15 +879,16 @@ if (newsImageInput) {
                         cropperImage.src = event.target.result;
                         console.log('🖼️ Image loaded into cropper element');
 
-                        // Destroy previous instance
-                        if (cropperInstance) {
-                            cropperInstance.destroy();
+                        // Destroy previous instance if exists on window
+                        if (window.currentCropper) {
+                            window.currentCropper.destroy();
+                            window.currentCropper = null;
                         }
                         
                         // Initialize Cropper (16:9 aspect ratio)
                         console.log('✂️ Initializing Cropper instance...', window.Cropper);
                         
-                        if (typeof Cropper === 'undefined' && typeof window.Cropper === 'undefined') {
+                        if (typeof window.Cropper === 'undefined' && typeof Cropper === 'undefined') {
                             console.error('❌ Cropper.js library is not loaded!');
                             alert('Cropper.js library failed to load. Please refresh the page.');
                             return;
@@ -895,12 +897,8 @@ if (newsImageInput) {
                         // Use window.Cropper just to be safe
                         const CropperClass = window.Cropper || Cropper;
                         
-                        // Destroy previous instance
-                        if (cropperInstance) {
-                            cropperInstance.destroy();
-                        }
-
-                        cropperInstance = new CropperClass(cropperImage, {
+                        // Create new instance on window object
+                        window.currentCropper = new CropperClass(cropperImage, {
                             aspectRatio: 16 / 9,
                             viewMode: 1,
                             dragMode: 'move',
@@ -913,7 +911,7 @@ if (newsImageInput) {
                             cropBoxResizable: true,
                             toggleDragModeOnDblclick: false,
                             ready() {
-                                console.log('✅ Cropper is ready');
+                                console.log('✅ Cropper is ready! Instance:', window.currentCropper);
                             }
                         });
                     }
@@ -930,9 +928,9 @@ if (cancelCropBtn) {
         console.log('❌ Crop cancelled');
         if (cropperModal) cropperModal.style.display = 'none';
         
-        if (cropperInstance) {
-            cropperInstance.destroy();
-            cropperInstance = null;
+        if (window.currentCropper) {
+            window.currentCropper.destroy();
+            window.currentCropper = null;
         }
         
         // Reset file input so users can re-select the same file if needed
@@ -944,19 +942,20 @@ if (cancelCropBtn) {
 if (saveCropBtn) {
     saveCropBtn.addEventListener('click', async () => {
         console.log('💾 Save Crop clicked');
-        console.log('Current cropper instance:', cropperInstance);
-
-        if (!cropperInstance) {
-            console.error('❌ No cropper instance found!');
+        
+        // Check window.currentCropper
+        if (!window.currentCropper) {
+            console.error('❌ Global cropper not found!');
             return;
         }
+        
         const originalBtnText = saveCropBtn.innerText;
         saveCropBtn.innerText = 'Processing...';
         saveCropBtn.disabled = true;
 
         try {
-            // Get cropped canvas
-            const canvas = cropperInstance.getCroppedCanvas({
+            // Get cropped canvas via global instance
+            const canvas = window.currentCropper.getCroppedCanvas({
                 width: 1280, 
                 height: 720,
                 fillColor: '#000'
@@ -1019,9 +1018,9 @@ if (saveCropBtn) {
                     saveCropBtn.disabled = false;
                     
                     // Cleanup cropper
-                    if (cropperInstance) {
-                        cropperInstance.destroy();
-                        cropperInstance = null;
+                    if (window.currentCropper) {
+                        window.currentCropper.destroy();
+                        window.currentCropper = null;
                     }
 
                     Swal.fire({
