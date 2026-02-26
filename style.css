@@ -1342,6 +1342,7 @@ ul {
         transition: left 0.3s ease;
         border-right: 2px solid var(--accent-color);
         z-index: 1001;
+        padding: 15px 0;
     }
 
     .navbar.active {
@@ -1351,6 +1352,62 @@ ul {
     /* Remove left margin on mobile */
     #main-content {
         margin-left: 0;
+    }
+
+    /* Compact navigation on mobile */
+    .logo {
+        font-size: 1.2rem;
+        padding: 15px 20px;
+        margin-bottom: 10px;
+    }
+
+    .nav-menu {
+        margin-bottom: 15px;
+    }
+
+    .nav-item {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+    }
+
+    .nav-categories {
+        padding: 0 20px 15px;
+    }
+
+    .category-label {
+        font-size: 0.7rem;
+        margin-bottom: 8px;
+    }
+
+    .category-item {
+        padding: 8px 0;
+        font-size: 0.85rem;
+    }
+
+    .lang-switcher {
+        padding: 12px 20px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .lang-switcher button {
+        padding: 5px 10px !important;
+        font-size: 0.7rem !important;
+    }
+
+    .nav-buttons {
+        padding: 0 20px 15px;
+    }
+
+    .nav-buttons .btn {
+        padding: 8px 16px;
+        font-size: 0.8rem;
+        margin-bottom: 8px;
+    }
+
+    /* User profile compact on mobile */
+    #user-profile-info {
+        padding: 10px 20px;
+        font-size: 0.85rem;
     }
 
     /* Stack prediction cards vertically on tablet */
@@ -1399,6 +1456,37 @@ ul {
     .container {
         padding: 0 15px;
     }
+
+    /* Even more compact navbar on smaller phones */
+    .navbar {
+        width: 260px;
+    }
+
+    .logo {
+        font-size: 1.1rem;
+        padding: 12px 15px;
+    }
+
+    .nav-item {
+        padding: 10px 15px;
+        font-size: 0.85rem;
+    }
+
+    .nav-categories,
+    .nav-buttons,
+    .lang-switcher {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .category-item {
+        font-size: 0.8rem;
+    }
+
+    #user-profile-info {
+        padding: 8px 15px;
+        font-size: 0.8rem;
+    }
     
     .hero-news-headline {
         font-size: 1.8rem;
@@ -1416,6 +1504,25 @@ ul {
     .btn-large {
         width: 100%;
         display: block;
+    }
+
+    /* Compact modal on mobile */
+    .modal-content {
+        margin: 20px;
+        padding: 25px;
+        max-width: none;
+    }
+
+    .news-section,
+    .predictions-section,
+    .admin-section {
+        padding: 30px 15px;
+    }
+
+    .news-title,
+    .predictions-title {
+        font-size: 2rem;
+        margin-bottom: 30px;
     }
 }
 
