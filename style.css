@@ -2339,3 +2339,29 @@ ul {
     70% { box-shadow: 0 0 0 10px rgba(0, 217, 255, 0); }
     100% { box-shadow: 0 0 0 0 rgba(0, 217, 255, 0); }
 }
+
+/* =====================
+   NEWS IMAGE STYLES
+   ===================== */
+/* Ensure news images look good without cropping */
+.hero-news-container {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.news-card img {
+    width: 100%;
+    height: auto;
+    max-height: 250px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 4px;
+}
+
+/* News feed thumbnail images */
+.news-image,
+.news-thumbnail {
+    object-fit: cover;
+    object-position: center;
+}

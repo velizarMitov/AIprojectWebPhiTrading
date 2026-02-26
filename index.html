@@ -11,9 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com/css2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" integrity="sha512-hvNR0F/e2J7zPPfX0jUps3QMAYgBJ0jCgQclU4oxszZlMHsn3gSEb5v0M339y5V5k8eX6pZ3+7k8+f8lE/rLpw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
     <!-- Ticker stays at very top, full width -->
@@ -323,20 +321,6 @@
 
     <!-- Prediction Details Section (populated dynamically by JS) -->
     <section id="prediction-details"></section>
-
-    <!-- Image Cropper Modal -->
-    <div id="cropper-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:10000; align-items:center; justify-content:center;">
-        <div style="background:#1a1a1a; border:2px solid #333; padding:20px; width:90%; max-width:800px; height:80vh; display:flex; flex-direction:column; position:relative;">
-            <h3 style="color:#00ff88; margin:0 0 15px 0; text-transform:uppercase; font-size:1.2rem;">Crop Image</h3>
-            <div style="flex:1; overflow:hidden; background:#000; margin-bottom:20px; position:relative; min-height:400px; max-height: 60vh;">
-                <img id="cropper-image" src="" alt="Image to crop" style="max-width:100%; display:block;">
-            </div>
-            <div style="display:flex; justify-content:flex-end; gap:15px; margin-top:auto;">
-                <button type="button" id="cancel-crop" class="btn btn-secondary">Cancel</button>
-                <button type="button" id="save-crop" class="btn btn-primary">Crop & Save</button>
-            </div>
-        </div>
-    </div>
 
     <!-- News Details Section (populated dynamically by JS) -->
     <section id="news-details"></section>
