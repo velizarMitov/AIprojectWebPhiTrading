@@ -1035,8 +1035,17 @@ async function loadNewsSlider() {
             // Update text content with clickable title
             const contentDiv = heroNewsContainer.querySelector('.hero-news-content');
             if (contentDiv) {
+                // Prepare excerpt
+                let excerptHTML = '';
+                if (item.content) {
+                    const textContent = item.content.replace(/<[^>]*>/g, '');
+                    const excerpt = textContent.length > 100 ? textContent.substring(0, 100) + '...' : textContent;
+                    excerptHTML = `<span class="hero-news-excerpt">${excerpt}</span>`;
+                }
+
                 contentDiv.innerHTML = `
                     <h1 class="hero-news-headline" style="cursor: pointer;" onclick="showNewsDetails('${item.id}')">${item.title || item.content}</h1>
+                    ${excerptHTML}
                 `;
             }
             

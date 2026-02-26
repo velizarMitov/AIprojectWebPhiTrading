@@ -385,8 +385,9 @@ ul {
     position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 40px;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -408,13 +409,32 @@ ul {
     z-index: 1;
 }
 
-/* News content wrapper */
+/* News content wrapper - Glassmorphism Card */
 .hero-news-content {
     position: relative;
     z-index: 2;
-    padding: 40px;
-    text-align: center;
-    max-width: 900px;
+    padding: 30px 40px;
+    text-align: left;
+    max-width: 800px;
+    width: fit-content;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border-left: 3px solid #00ff88;
+    margin: 0;
+    border-radius: 0 8px 8px 0;
+    transition: all 0.3s ease;
+}
+
+/* News Excerpt */
+.hero-news-excerpt {
+    display: block;
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 15px;
+    line-height: 1.6;
+    font-weight: 400;
+    max-width: 650px;
+    animation: slideInLeft 0.8s ease-out 0.2s backwards;
 }
 
 /* Breaking badge */
@@ -435,15 +455,27 @@ ul {
 
 /* Hero news headline */
 .hero-news-headline {
-    font-size: 3.5rem;
-    line-height: 1.2;
+    font-size: 2.5rem;
+    line-height: 1.3;
     font-weight: 800;
-    letter-spacing: -1px;
+    letter-spacing: -0.5px;
     color: var(--text-color);
     text-transform: uppercase;
     text-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
     margin: 0;
-    animation: fadeInUp 0.8s ease-out;
+    max-width: 700px;
+    animation: slideInLeft 0.8s ease-out;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 /* CTA Button positioning */
