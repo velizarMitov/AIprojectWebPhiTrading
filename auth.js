@@ -1254,17 +1254,6 @@ document.querySelectorAll('.nav-item[data-view]').forEach(navItem => {
         closeMobileMenu();
     });
 });
-        switchView(viewName);
-        
-        // Close mobile menu if open
-        const navbar = document.querySelector('.navbar');
-        const hamburger = document.querySelector('.hamburger');
-        if (navbar && navbar.classList.contains('active')) {
-            navbar.classList.remove('active');
-            if (hamburger) hamburger.classList.remove('toggle');
-        }
-    });
-});
 
 // Set initial view to Home
 document.addEventListener('DOMContentLoaded', () => {
