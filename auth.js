@@ -895,6 +895,161 @@ window.deleteNews = async (id) => {
 
 // Post News
 if (adminNewsForm) {
+// --- IMAGE CROPPER LOGIC ---
+let cropperInstance = null;
+let currentCroppedImageUrl = null; // Stores the uploaded URL
+
+// DOM Elements for Cropper
+const cropperModal = document.getElementById('cropper-modal');
+const cropperImage = document.getElementById('cropper-image');
+const saveCropBtn = document.getElementById('save-crop');
+const cancelCropBtn = document.getElementById('cancel-crop');
+const newsImageInput = document.getElementById('news-image-input');
+
+// Initialize Cropper when file is selected
+if (newsImageInput) {
+    newsImageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Reset previous crop data
+            currentCroppedImageUrl = null;
+            
+            // Show modal
+            if (cropperModal) {
+                cropperModal.style.display = 'flex';
+                
+                // Read and load image
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    if (cropperImage) {
+                        cropperImage.src = event.target.result;
+                        
+                        // Destroy previous instance if exists
+                        if (cropperInstance) {
+                            cropperInstance.destroy();
+                        }
+                        
+                        // Initialize Cropper (16:9 aspect ratio)
+                        cropperInstance = new Cropper(cropperImage, {
+                            aspectRatio: 16 / 9,
+                            viewMode: 1,
+                            dragMode: 'move',
+                            autoCropArea: 0.8,
+                            restore: false,
+                            guides: true,
+                            center: true,
+                            highlight: false,
+                            cropBoxMovable: true,
+                            cropBoxResizable: true,
+                            toggleDragModeOnDblclick: false,
+                        });
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    });
+}
+
+// Cancel Crop
+if (cancelCropBtn) {
+    cancelCropBtn.addEventListener('click', () => {
+        if (cropperModal) cropperModal.style.display = 'none';
+        if (cropperInstance) {
+            cropperInstance.destroy();
+            cropperInstance = null;
+        }
+        if (newsImageInput) newsImageInput.value = ''; // Reset input
+    });
+}
+
+// Save Crop & Upload
+if (saveCropBtn) {
+    saveCropBtn.addEventListener('click', async () => {
+        if (!cropperInstance) return;
+
+        const originalBtnText = saveCropBtn.innerText;
+        saveCropBtn.innerText = 'Processing...';
+        saveCropBtn.disabled = true;
+
+        try {
+            // Get cropped canvas
+            const canvas = cropperInstance.getCroppedCanvas({
+                width: 1280, // Reasonable max width for web
+                height: 720,
+                fillColor: '#000'
+            });
+
+            // Convert to Blob
+            canvas.toBlob(async (blob) => {
+                if (!blob) {
+                    throw new Error('Canvas is empty');
+                }
+
+                // Upload to Supabase Storage
+                const fileName = `news-cropped-${Date.now()}.jpg`;
+                saveCropBtn.innerText = 'Uploading...';
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('news-images')
+                    .upload(fileName, blob, {
+                        contentType: 'image/jpeg'
+                    });
+
+                if (uploadError) throw new Error('Upload failed: ' + uploadError.message);
+
+                // Get Public URL
+                const { data: urlData } = supabase.storage
+                    .from('news-images')
+                    .getPublicUrl(fileName);
+                
+                currentCroppedImageUrl = urlData.publicUrl;
+                console.log('✅ Cropped image uploaded:', currentCroppedImageUrl);
+
+                // Success Feedback
+                saveCropBtn.innerText = 'Saved!';
+                setTimeout(() => {
+                    if (cropperModal) cropperModal.style.display = 'none';
+                    saveCropBtn.innerText = originalBtnText;
+                    saveCropBtn.disabled = false;
+                    
+                    // Cleanup
+                    if (cropperInstance) {
+                        cropperInstance.destroy();
+                        cropperInstance = null;
+                    }
+
+                    // Optional: Show preview nearby input?
+                    // For now, we rely on the fact that currentCroppedImageUrl is set
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Image Ready',
+                        text: 'Your image has been cropped and uploaded.',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#121212',
+                        color: '#e0e0e0'
+                    });
+
+                }, 500);
+
+            }, 'image/jpeg', 0.85); // 85% quality
+
+        } catch (err) {
+            console.error('Check Error:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Cropping Failed',
+                text: err.message,
+                background: '#121212',
+                color: '#e0e0e0'
+            });
+            saveCropBtn.innerText = originalBtnText;
+            saveCropBtn.disabled = false;
+        }
+    });
+}
+
     adminNewsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const title = document.getElementById('news-title').value;
@@ -913,10 +1068,11 @@ if (adminNewsForm) {
         submitBtn.innerHTML = 'Posting...';
 
         try {
-            let imageUrl = null;
+            let imageUrl = currentCroppedImageUrl; // Use cropped URL if available
 
-            // Handle Image Upload
-            if (imageFile) {
+            // Fallback to original upload if no cropped URL but file exists
+            if (!imageUrl && imageFile) {
+                console.warn('⚠️ No cropped image URL found, uploading original...');
                 submitBtn.innerHTML = 'Uploading Image...';
                 const fileName = `news-${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
                 
@@ -948,13 +1104,29 @@ if (adminNewsForm) {
             document.getElementById('news-title').value = '';
             newsContentInput.value = '';
             if (newsImageInput) newsImageInput.value = '';
+            currentCroppedImageUrl = null;
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Published!',
+                text: 'News article has been posted.',
+                background: '#1a1a1a',
+                color: '#fff',
+                confirmButtonColor: '#00ff88'
+            });
+
             loadAdminNews();
             loadNewsSlider();
-            alert('News posted successfully!');
 
         } catch (err) {
             console.error(err);
-            alert(err.message || 'Error posting news');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.message || 'Error posting news',
+                background: '#1a1a1a',
+                color: '#fff'
+            });
         } finally {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;
