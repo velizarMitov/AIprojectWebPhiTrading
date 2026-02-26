@@ -288,18 +288,28 @@ ul {
     display: none;
     cursor: pointer;
     position: fixed;
-    top: calc(var(--ticker-height) + 15px);
+    top: calc(var(--ticker-height) + 12px);
     left: 15px;
     z-index: 10001;
+    padding: 8px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.hamburger:hover {
+    background: rgba(0, 255, 136, 0.2);
 }
 
 .hamburger span {
     display: block;
-    width: 25px;
+    width: 22px;
     height: 2px;
     background-color: var(--text-color);
-    margin: 5px 0;
-    transition: all 0.3s ease;
+    margin: 4px 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
 }
 
 /* Main Content Container */
@@ -1321,16 +1331,24 @@ ul {
     left: 0;
     width: 100%;
     height: calc(100vh - var(--ticker-height));
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
     z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .mobile-backdrop.active {
     display: block;
+    opacity: 1;
 }
 
 @media (max-width: 960px) {
+    :root {
+        --ticker-height: 35px; /* Smaller ticker on mobile */
+        --sidebar-width: 280px;
+    }
+
     .hamburger {
         display: block;
     }
@@ -1390,8 +1408,13 @@ ul {
     }
 
     .lang-switcher button {
-        padding: 5px 10px !important;
-        font-size: 0.7rem !important;
+        padding: 8px 12px !important;
+        font-size: 0.75rem !important;
+        min-height: 40px;
+        min-width: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .nav-buttons {
@@ -1399,15 +1422,35 @@ ul {
     }
 
     .nav-buttons .btn {
-        padding: 8px 16px;
-        font-size: 0.8rem;
-        margin-bottom: 8px;
+        padding: 10px 18px;
+        font-size: 0.85rem;
+        margin-bottom: 10px;
+        min-height: 44px; /* Better touch targets */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .nav-item {
+        min-height: 44px; /* Better touch targets */
+        display: flex;
+        align-items: center;
     }
 
     /* User profile compact on mobile */
     #user-profile-info {
         padding: 10px 20px;
         font-size: 0.85rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    /* Ensure text doesn't overflow */
+    .nav-item span,
+    .category-item,
+    .btn {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
 
     /* Stack prediction cards vertically on tablet */
@@ -1453,8 +1496,22 @@ ul {
 }
 
 @media (max-width: 600px) {
+    :root {
+        --ticker-height: 30px; /* Even smaller on phones */
+    }
+
     .container {
         padding: 0 15px;
+    }
+
+    /* Smaller ticker text on mobile */
+    .ticker-item {
+        font-size: 0.75rem;
+        padding: 0 15px;
+    }
+
+    .ticker-wrap {
+        height: 30px;
     }
 
     /* Even more compact navbar on smaller phones */

@@ -1251,6 +1251,12 @@ document.querySelectorAll('.nav-item[data-view]').forEach(navItem => {
         switchView(viewName);
         
         // Close mobile menu if open
+        closeMobileMenu();
+    });
+});
+        switchView(viewName);
+        
+        // Close mobile menu if open
         const navbar = document.querySelector('.navbar');
         const hamburger = document.querySelector('.hamburger');
         if (navbar && navbar.classList.contains('active')) {
@@ -1270,6 +1276,9 @@ document.addEventListener('DOMContentLoaded', () => {
         heroCTA.addEventListener('click', (e) => {
             e.preventDefault();
             switchView('predictions');
+            
+            // Close mobile menu if open
+            closeMobileMenu();
         });
     }
 });
@@ -1279,6 +1288,9 @@ if (adminPanelBtn) {
     adminPanelBtn.addEventListener('click', (e) => {
         e.preventDefault();
         switchView('admin');
+        
+        // Close mobile menu if open
+        closeMobileMenu();
     });
 }
 
@@ -1952,13 +1964,50 @@ const navbar = document.querySelector('.navbar');
 const mobileBackdrop = document.querySelector('.mobile-backdrop');
 
 if (hamburger && navbar) {
-    // Hamburger toggle
+    // Hamburger toggle with touch support
     hamburger.addEventListener('click', toggleMobileMenu);
+    hamburger.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        toggleMobileMenu();
+    });
     
     // Backdrop click to close
     if (mobileBackdrop) {
         mobileBackdrop.addEventListener('click', closeMobileMenu);
+        mobileBackdrop.addEventListener('touchstart', closeMobileMenu);
     }
+    
+    // Touch swipe to close menu
+    let startX = 0;
+    let currentX = 0;
+    let touchStarted = false;
+    
+    navbar.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        touchStarted = true;
+    });
+    
+    navbar.addEventListener('touchmove', (e) => {
+        if (!touchStarted) return;
+        currentX = e.touches[0].clientX;
+        
+        // Prevent scrolling when swiping
+        if (Math.abs(currentX - startX) > 10) {
+            e.preventDefault();
+        }
+    });
+    
+    navbar.addEventListener('touchend', (e) => {
+        if (!touchStarted) return;
+        touchStarted = false;
+        
+        const diffX = startX - currentX;
+        
+        // Swipe left to close (threshold: 50px)
+        if (diffX > 50 && navbar.classList.contains('active')) {
+            closeMobileMenu();
+        }
+    });
     
     // Click outside to close on mobile
     document.addEventListener('click', (e) => {
