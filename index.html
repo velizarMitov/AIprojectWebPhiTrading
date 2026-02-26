@@ -14,35 +14,57 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
+    <!-- Ticker stays at very top, full width -->
     <div class="ticker-wrap">
         <div class="ticker" id="forex-ticker">
             <span class="ticker-item">Loading Market Data...</span>
         </div>
     </div>
+
+    <!-- Sidebar Navigation (Left Side) -->
     <nav class="navbar">
-        <div class="container">
-            <div class="logo">PHI<span class="accent">.TRADING</span></div>
-            <ul class="nav-links">
-                <li><a href="#" data-category="Forex">Forex</a></li>
-                <li><a href="#" data-category="Crypto">Crypto</a></li>
-                <li><a href="#" data-category="Stocks">Stocks</a></li>
-                <li><a href="#" data-category="ML Predictions">ML Predictions</a></li>
-            </ul>
-            <div class="nav-buttons">
-                <a href="#login" id="show-login" class="btn btn-secondary">Login</a>
-                <a href="#register" id="show-register" class="btn btn-primary">Register</a>
-                <a href="#admin" id="admin-panel-btn" class="btn btn-secondary" style="display: none;">Admin Panel</a>
-                <button id="logout-btn" class="btn btn-secondary" style="display: none;">Logout</button>
-            </div>
-            <div class="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
+        <div class="logo">PHI<span class="accent">.TRADING</span></div>
+        
+        <div class="nav-menu">
+            <a href="#home" class="nav-item active" data-view="home">
+                <span>◆</span> Home
+            </a>
+            <a href="#predictions" class="nav-item" data-view="predictions">
+                <span>▸</span> Predictions
+            </a>
+            <a href="#admin" class="nav-item" id="admin-nav-btn" style="display: none;" data-view="admin">
+                <span>◉</span> Admin Panel
+            </a>
+        </div>
+
+        <div class="nav-categories">
+            <div class="category-label">FILTER BY:</div>
+            <a href="#" class="category-item" data-category="Forex">Forex</a>
+            <a href="#" class="category-item" data-category="Crypto">Crypto</a>
+            <a href="#" class="category-item" data-category="Stocks">Stocks</a>
+            <a href="#" class="category-item" data-category="ML Predictions">ML Predictions</a>
+        </div>
+
+        <div class="nav-buttons">
+            <a href="#login" id="show-login" class="btn btn-secondary">Login</a>
+            <a href="#register" id="show-register" class="btn btn-primary">Register</a>
+            <a href="#admin" id="admin-panel-btn" class="btn btn-secondary" style="display: none;">Admin</a>
+            <button id="logout-btn" class="btn btn-secondary" style="display: none;">Logout</button>
+        </div>
+
+        <div class="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
         </div>
     </nav>
 
-    <header class="hero">
+    <!-- Mobile Menu Backdrop -->
+    <div class="mobile-backdrop"></div>
+
+    <!-- Main Content Area (Right of Sidebar) -->
+    <main id="main-content">
+        <header class="hero">
         <div id="hero-news-container" class="hero-news-container">
             <div class="hero-news-overlay"></div>
             <div class="hero-news-content">
@@ -50,7 +72,7 @@
                 <h1 class="hero-news-headline">Loading Market Intelligence...</h1>
             </div>
             <div class="hero-cta">
-                <a href="#start-trading" class="btn btn-large btn-neon">GET PREDICTIONS</a>
+                <a href="#predictions" id="hero-cta-btn" class="btn btn-large btn-neon">GET PREDICTIONS</a>
             </div>
         </div>
     </header>
@@ -93,7 +115,7 @@
                             <option value="Forex">Forex</option>
                             <option value="Crypto">Crypto</option>
                             <option value="Stocks">Stocks</option>
-                            <option value="ML">ML Predictions</option>
+                            <option value="ML Predictions">ML Predictions</option>
                         </select>
                     </div>
                     
@@ -229,7 +251,7 @@
                         <option value="Forex">Forex</option>
                         <option value="Crypto">Crypto</option>
                         <option value="Stocks">Stocks</option>
-                        <option value="ML">ML Predictions</option>
+                        <option value="ML Predictions">ML Predictions</option>
                     </select>
                 </div>
 
@@ -269,33 +291,9 @@
     <!-- News Details Section (populated dynamically by JS) -->
     <section id="news-details"></section>
 
-    <script>
-        const hamburger = document.querySelector(".hamburger");
-        const navLinks = document.querySelector(".nav-links");
-        const navButtons = document.querySelector(".nav-buttons");
+    </main>
+    <!-- End Main Content -->
 
-        function closeMenu() {
-            navLinks.classList.remove("active");
-            navButtons.classList.remove("active");
-            hamburger.classList.remove("toggle");
-        }
-
-        hamburger.addEventListener("click", () => {
-            navLinks.classList.toggle("active");
-            navButtons.classList.toggle("active");
-            hamburger.classList.toggle("toggle");
-        });
-
-        // Close menu when a nav link is clicked
-        navLinks.querySelectorAll("a").forEach(link => {
-            link.addEventListener("click", closeMenu);
-        });
-
-        // Close menu when an auth button is clicked
-        navButtons.querySelectorAll(".btn, button").forEach(btn => {
-            btn.addEventListener("click", closeMenu);
-        });
-    </script>
     <script type="module" src="auth.js"></script>
 </body>
 </html>
