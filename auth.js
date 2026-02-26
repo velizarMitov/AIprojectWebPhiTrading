@@ -458,52 +458,122 @@ async function updateUI(user) {
     }
 }
 
-// Fetch and show user profile information
-async function fetchAndShowProfile(userId) {
+// Update UI with user profile information
+async function updateUIWithProfile(user) {
+    console.log('Profile User ID:', user.id);
+    console.log('User email:', user.email);
+    
     const userProfileInfo = document.getElementById('user-profile-info');
     const userNameDisplay = document.getElementById('user-name-display');
     
-    if (!userProfileInfo || !userNameDisplay) return;
+    if (!userProfileInfo || !userNameDisplay) {
+        console.error('Profile elements not found');
+        return;
+    }
 
     try {
-        const { data: profile, error } = await supabase
+        // Try to get existing profile
+        let { data, error } = await supabase
             .from('profiles')
-            .select('full_name')
-            .eq('id', userId)
+            .select('full_name, username, tier, role')
+            .eq('id', user.id)
             .single();
 
-        if (error) {
+        if (error && error.code !== 'PGRST116') {
+            // PGRST116 is "not found" error, other errors are real problems
             console.error('Error fetching user profile:', error);
             return;
         }
 
-        if (profile && profile.full_name) {
-            userNameDisplay.textContent = profile.full_name;
+        if (data && data.full_name) {
+            console.log('Found existing profile:', data);
+            userNameDisplay.innerText = data.full_name;
+            userProfileInfo.style.display = 'block';
+            return;
+        }
+
+        // No profile found - try to create one
+        console.log('No profile found, creating default profile...');
+        
+        // Extract name from email or use default
+        const emailName = user.email.split('@')[0];
+        const displayName = user.user_metadata?.full_name || user.user_metadata?.name || emailName || 'User';
+        
+        // Create profile
+        const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert([{
+                id: user.id,
+                full_name: displayName,
+                username: emailName,
+                tier: 'Bronze',
+                role: 'user'
+            }])
+            .select()
+            .single();
+
+        if (insertError) {
+            // If duplicate key error, profile already exists - retry select
+            if (insertError.code === '23505') {
+                console.log('Profile already exists (duplicate key), retrying fetch...');
+                
+                // Retry the select query
+                const { data: retryData, error: retryError } = await supabase
+                    .from('profiles')
+                    .select('full_name, username, tier, role')
+                    .eq('id', user.id)
+                    .single();
+
+                if (retryData && retryData.full_name) {
+                    console.log('Found profile on retry:', retryData);
+                    userNameDisplay.innerText = retryData.full_name;
+                    userProfileInfo.style.display = 'block';
+                } else {
+                    console.error('Still no profile found on retry:', retryError);
+                    // Fallback - show email name
+                    userNameDisplay.innerText = displayName;
+                    userProfileInfo.style.display = 'block';
+                }
+            } else {
+                console.error('Error creating profile:', insertError);
+                // Fallback - show email name
+                userNameDisplay.innerText = displayName;
+                userProfileInfo.style.display = 'block';
+            }
+        } else {
+            console.log('Profile created successfully:', newProfile);
+            userNameDisplay.innerText = newProfile.full_name;
             userProfileInfo.style.display = 'block';
         }
     } catch (error) {
-        console.error('Error in fetchAndShowProfile:', error);
+        console.error('Error in updateUIWithProfile:', error);
+        // Fallback - show something
+        const fallbackName = user.email.split('@')[0];
+        userNameDisplay.innerText = fallbackName;
+        userProfileInfo.style.display = 'block';
     }
 }
 
 // Auth State Change Listener
 supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth state changed:', event, session?.user?.id);
     updateUI(session?.user ?? null);
     
-    if (session?.user) {
-        // Call fetchAndShowProfile when user is logged in
-        fetchAndShowProfile(session.user.id);
+    if (event === 'SIGNED_IN' && session?.user) {
+        // Call updateUIWithProfile when user signs in
+        updateUIWithProfile(session.user);
         setTimeout(loadPredictions, 500);
-    } else {
+    } else if (event === 'SIGNED_OUT') {
         // Hide profile container and clear text when user is logged out
         const userProfileInfo = document.getElementById('user-profile-info');
         const userNameDisplay = document.getElementById('user-name-display');
         
+        console.log('Hiding user profile info');
         if (userProfileInfo) {
             userProfileInfo.style.display = 'none';
         }
         if (userNameDisplay) {
-            userNameDisplay.textContent = '';
+            userNameDisplay.innerText = '';
         }
     }
 });
@@ -1813,4 +1883,22 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+// Initial Load: Check if a session already exists
+(async () => {
+    console.log('Checking for existing session...');
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+        console.error('Error getting session:', error);
+        return;
+    }
+    
+    if (session?.user) {
+        console.log('Found existing session for user:', session.user.id);
+        updateUIWithProfile(session.user);
+    } else {
+        console.log('No existing session found');
+    }
+})();
 
