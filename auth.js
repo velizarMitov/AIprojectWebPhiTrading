@@ -858,9 +858,95 @@ const saveCropBtn = document.getElementById('save-crop');
 const cancelCropBtn = document.getElementById('cancel-crop');
 const newsImageInput = document.getElementById('news-image-input');
 
+// Helper: Dynamically load Cropper.js if not available
+function loadCropperLibrary() {
+    return new Promise((resolve, reject) => {
+        // Already loaded?
+        if (typeof window.Cropper !== 'undefined') {
+            console.log('✅ Cropper.js already loaded');
+            resolve(window.Cropper);
+            return;
+        }
+
+        console.log('⏳ Dynamically loading Cropper.js...');
+
+        // Load CSS first
+        if (!document.querySelector('link[href*="cropper.min.css"]')) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css';
+            document.head.appendChild(link);
+        }
+
+        // Load JS
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js';
+        script.crossOrigin = 'anonymous';
+        
+        script.onload = () => {
+            if (typeof window.Cropper !== 'undefined') {
+                console.log('✅ Cropper.js dynamically loaded successfully');
+                resolve(window.Cropper);
+            } else {
+                reject(new Error('Cropper loaded but not defined'));
+            }
+        };
+        
+        script.onerror = () => {
+            reject(new Error('Failed to load Cropper.js from CDN'));
+        };
+
+        document.head.appendChild(script);
+    });
+}
+
+// Helper: Initialize Cropper on an image element
+async function initializeCropper(imageElement) {
+    try {
+        const CropperClass = await loadCropperLibrary();
+        
+        // Destroy previous instance if exists
+        if (window.currentCropper) {
+            window.currentCropper.destroy();
+            window.currentCropper = null;
+        }
+
+        // Wait for image to be fully loaded
+        if (!imageElement.complete) {
+            await new Promise((resolve) => {
+                imageElement.onload = resolve;
+            });
+        }
+
+        console.log('✂️ Creating new Cropper instance...');
+        
+        window.currentCropper = new CropperClass(imageElement, {
+            aspectRatio: 16 / 9,
+            viewMode: 1,
+            dragMode: 'move',
+            autoCropArea: 0.8,
+            restore: false,
+            guides: true,
+            center: true,
+            highlight: false,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: false,
+            ready() {
+                console.log('✅ Cropper is ready! Instance:', window.currentCropper);
+            }
+        });
+
+        return window.currentCropper;
+    } catch (error) {
+        console.error('❌ Failed to initialize Cropper:', error);
+        throw error;
+    }
+}
+
 // Initialize Cropper when a file is selected
 if (newsImageInput) {
-    newsImageInput.addEventListener('change', (e) => {
+    newsImageInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         console.log('📂 File selected:', file);
 
@@ -868,56 +954,45 @@ if (newsImageInput) {
             // Reset previous crop data
             currentCroppedImageUrl = null;
             
-            // Show modal
-            if (cropperModal) {
-                cropperModal.style.display = 'flex';
-                
-                // Read and load image
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    if (cropperImage) {
-                        cropperImage.src = event.target.result;
-                        console.log('🖼️ Image loaded into cropper element');
+            // Read and load image first
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                if (cropperImage) {
+                    cropperImage.src = event.target.result;
+                    console.log('🖼️ Image loaded into cropper element');
 
-                        // Destroy previous instance if exists on window
-                        if (window.currentCropper) {
-                            window.currentCropper.destroy();
-                            window.currentCropper = null;
-                        }
-                        
-                        // Initialize Cropper (16:9 aspect ratio)
-                        console.log('✂️ Initializing Cropper instance...', window.Cropper);
-                        
-                        if (typeof window.Cropper === 'undefined' && typeof Cropper === 'undefined') {
-                            console.error('❌ Cropper.js library is not loaded!');
-                            alert('Cropper.js library failed to load. Please refresh the page.');
-                            return;
-                        }
-
-                        // Use window.Cropper just to be safe
-                        const CropperClass = window.Cropper || Cropper;
-                        
-                        // Create new instance on window object
-                        window.currentCropper = new CropperClass(cropperImage, {
-                            aspectRatio: 16 / 9,
-                            viewMode: 1,
-                            dragMode: 'move',
-                            autoCropArea: 0.8,
-                            restore: false,
-                            guides: true,
-                            center: true,
-                            highlight: false,
-                            cropBoxMovable: true,
-                            cropBoxResizable: true,
-                            toggleDragModeOnDblclick: false,
-                            ready() {
-                                console.log('✅ Cropper is ready! Instance:', window.currentCropper);
-                            }
-                        });
+                    // Show modal AFTER image is set
+                    if (cropperModal) {
+                        cropperModal.style.display = 'flex';
                     }
-                };
-                reader.readAsDataURL(file);
-            }
+
+                    try {
+                        // Initialize cropper with dynamic loading fallback
+                        await initializeCropper(cropperImage);
+                    } catch (error) {
+                        // User-friendly error
+                        if (cropperModal) cropperModal.style.display = 'none';
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Image Editor Unavailable',
+                            html: `
+                                <p>The image cropping library failed to load.</p>
+                                <p style="font-size: 0.85rem; color: #888; margin-top: 10px;">
+                                    Try refreshing the page or check your internet connection.
+                                </p>
+                            `,
+                            background: '#121212',
+                            color: '#e0e0e0',
+                            confirmButtonColor: '#00ff88'
+                        });
+                        
+                        // Reset file input
+                        newsImageInput.value = '';
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
         }
     });
 }
