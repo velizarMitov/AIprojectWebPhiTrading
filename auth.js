@@ -6,6 +6,25 @@ let currentPredictions = [];
 let currentCategoryFilter = null;
 const priceCache = {}; // { 'EUR/USD': { price: '1.0821', ts: Date.now() } }
 
+// Auth Check Helper - returns true if logged in, false otherwise
+async function checkAuthForPredictions() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        // Show SweetAlert and open login modal
+        Swal.fire({
+            icon: 'info',
+            title: 'Login Required',
+            text: 'Please Login to access AI Predictions',
+            confirmButtonColor: '#00ff88',
+            background: '#121212',
+            color: '#e0e0e0'
+        });
+        openModal('login');
+        return false;
+    }
+    return true;
+}
+
 // DOM Elements
 const authModal = document.getElementById('auth-modal');
 const loginForm = document.getElementById('login-form');
@@ -564,6 +583,8 @@ supabase.auth.onAuthStateChange((event, session) => {
         // Call updateUIWithProfile when user signs in
         updateUIWithProfile(session.user);
         setTimeout(loadPredictions, 500);
+        // Close modal if open
+        closeModal();
     } else if (event === 'SIGNED_OUT') {
         // Hide profile container and clear text when user is logged out
         const userProfileInfo = document.getElementById('user-profile-info');
@@ -984,7 +1005,7 @@ function setHeroContent(badge, headline, imageUrl) {
 }
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     loadNewsSlider();
     // Admin list is loaded when admin panel is shown or page loads if admin
     if (localStorage.getItem('userRole') === 'admin') {
@@ -1110,7 +1131,13 @@ logoutBtn.addEventListener('click', handleLogout);
 // ============================================
 // CENTRALIZED NAVIGATION HANDLER
 // ============================================
-function handleNavigation(category) {
+async function handleNavigation(category) {
+    // Prediction categories require authentication
+    const isAuthenticated = await checkAuthForPredictions();
+    if (!isAuthenticated) {
+        return; // Don't proceed if not logged in
+    }
+    
     // Set category filter
     if (currentCategoryFilter === category) {
         // Toggle off if clicking the same category
@@ -1245,9 +1272,19 @@ function switchView(viewName) {
 
 // Initialize view switching on nav items
 document.querySelectorAll('.nav-item[data-view]').forEach(navItem => {
-    navItem.addEventListener('click', (e) => {
+    navItem.addEventListener('click', async (e) => {
         e.preventDefault();
         const viewName = navItem.getAttribute('data-view');
+        
+        // Check auth for predictions view
+        if (viewName === 'predictions') {
+            const isAuthenticated = await checkAuthForPredictions();
+            if (!isAuthenticated) {
+                closeMobileMenu();
+                return;
+            }
+        }
+        
         switchView(viewName);
         
         // Close mobile menu if open
@@ -1262,8 +1299,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hero CTA button - switch to predictions
     const heroCTA = document.getElementById('hero-cta-btn');
     if (heroCTA) {
-        heroCTA.addEventListener('click', (e) => {
+        heroCTA.addEventListener('click', async (e) => {
             e.preventDefault();
+            
+            // Check auth before showing predictions
+            const isAuthenticated = await checkAuthForPredictions();
+            if (!isAuthenticated) return;
+            
             switchView('predictions');
             
             // Close mobile menu if open
@@ -1670,7 +1712,7 @@ async function executeEdit(id) {
 }
 
 // Global Event Delegation — NON-async so confirm/alert are never blocked
-document.body.addEventListener('click', (e) => {
+document.body.addEventListener('click', async (e) => {
     // Back to Feed button inside details view
     if (e.target.closest('#back-to-feed-btn')) {
         backToFeed();
@@ -1735,6 +1777,11 @@ document.body.addEventListener('click', (e) => {
     if (card && !e.target.closest('.edit-btn') && !e.target.closest('.delete-btn')) {
         const id = card.getAttribute('data-id');
         if (!id) return;
+        
+        // Check auth before showing prediction details
+        const isAuthenticated = await checkAuthForPredictions();
+        if (!isAuthenticated) return;
+        
         const pred = currentPredictions.find(p => String(p.id) === String(id));
         if (pred) showPredictionDetails(pred);
     }

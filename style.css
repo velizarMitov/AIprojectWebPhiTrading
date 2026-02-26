@@ -123,9 +123,8 @@ ul {
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    padding: 30px 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    padding: 0;
+    overflow: hidden;
 }
 
 /* Custom scrollbar for sidebar */
@@ -143,6 +142,38 @@ ul {
 }
 
 .navbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 136, 0.5);
+}
+
+/* Sidebar wrapper divs - Desktop */
+.sidebar-top {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 30px 0 20px;
+}
+
+.sidebar-bottom {
+    flex-shrink: 0;
+    border-top: 1px solid rgba(0, 255, 136, 0.2);
+    padding: 10px 0;
+}
+
+/* Custom scrollbar for sidebar-top */
+.sidebar-top::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-top::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-top::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 136, 0.3);
+    border-radius: 3px;
+}
+
+.sidebar-top::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 255, 136, 0.5);
 }
 
@@ -1368,23 +1399,42 @@ ul {
         min-height: 44px; /* Touch target */
     }
 
-    /* Sidebar hidden by default, slides in from left */
+    /* Sidebar hidden by default, slides in from left - FLEX LAYOUT */
     .navbar {
         position: fixed;
         left: -260px; /* Hidden off-screen */
         width: 260px;
         top: var(--ticker-height);
-        height: calc(100vh - var(--ticker-height));
+        height: calc(100dvh - var(--ticker-height)); /* Dynamic viewport height */
         transition: left 0.3s ease;
         border-right: 2px solid var(--accent-color);
         z-index: 2000; /* Above everything including ticker */
-        padding: 15px 0;
+        padding: 0;
         background-color: var(--bg-color);
         box-shadow: 4px 0 30px rgba(0, 0, 0, 0.8);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; /* Nav at top, buttons at bottom */
     }
 
     .navbar.active {
         left: 0;
+    }
+
+    /* Scrollable top section of sidebar */
+    .sidebar-top {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 15px 0;
+    }
+
+    /* Fixed bottom section for auth buttons */
+    .sidebar-bottom {
+        flex-shrink: 0;
+        padding: 15px 0;
+        border-top: 1px solid rgba(0, 255, 136, 0.2);
+        background-color: var(--bg-color);
     }
 
     /* Remove left margin on mobile */
@@ -1672,6 +1722,17 @@ ul {
     .card-right {
         padding: 16px;
     }
+}
+
+/* Lock icon styling for premium categories */
+.lock-icon {
+    font-size: 0.75rem;
+    margin-right: 6px;
+    opacity: 0.7;
+}
+
+.category-item:hover .lock-icon {
+    opacity: 1;
 }
 
 /* Modal Styles */

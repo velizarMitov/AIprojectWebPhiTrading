@@ -23,46 +23,52 @@
 
     <!-- Sidebar Navigation (Left Side) -->
     <nav class="navbar">
-        <div class="logo">PHI<span class="accent">.TRADING</span></div>
-        
-        <div id="user-profile-info" style="display: none;">
-            <span id="user-name-display"></span>
-        </div>
-        
-        <div class="nav-menu">
-            <a href="#" class="nav-item active" data-view="home">
-                <span>◆</span> <span data-i18n="home">Home</span>
-            </a>
-            <a href="#" class="nav-item" data-view="news">
-                <span>◈</span> <span data-i18n="news">News</span>
-            </a>
-            <a href="#" class="nav-item" data-view="predictions">
-                <span>▸</span> <span data-i18n="latestPredictions">Predictions</span>
-            </a>
-            <a href="#" class="nav-item" id="admin-nav-btn" style="display: none;" data-view="admin">
-                <span>◉</span> <span data-i18n="adminPanel">Admin Panel</span>
-            </a>
+        <!-- Scrollable top section with navigation -->
+        <div class="sidebar-top">
+            <div class="logo">PHI<span class="accent">.TRADING</span></div>
+            
+            <div id="user-profile-info" style="display: none;">
+                <span id="user-name-display"></span>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="#" class="nav-item active" data-view="home">
+                    <span>◆</span> <span data-i18n="home">Home</span>
+                </a>
+                <a href="#" class="nav-item" data-view="news">
+                    <span>◈</span> <span data-i18n="news">News</span>
+                </a>
+                <a href="#" class="nav-item" data-view="predictions">
+                    <span>▸</span> <span data-i18n="latestPredictions">Predictions</span> <span class="lock-icon">🔒</span>
+                </a>
+                <a href="#" class="nav-item" id="admin-nav-btn" style="display: none;" data-view="admin">
+                    <span>◉</span> <span data-i18n="adminPanel">Admin Panel</span>
+                </a>
+            </div>
+
+            <div class="nav-categories">
+                <div class="category-label" data-i18n="filterBy">FILTER BY:</div>
+                <a href="#" class="category-item" data-category="Forex" data-i18n="forex"><span class="lock-icon">🔒</span> Forex</a>
+                <a href="#" class="category-item" data-category="Crypto" data-i18n="crypto"><span class="lock-icon">🔒</span> Crypto</a>
+                <a href="#" class="category-item" data-category="Stocks" data-i18n="stocks"><span class="lock-icon">🔒</span> Stocks</a>
+                <a href="#" class="category-item" data-category="ML Predictions" data-i18n="mlPredictions"><span class="lock-icon">🔒</span> ML Predictions</a>
+            </div>
         </div>
 
-        <div class="nav-categories">
-            <div class="category-label" data-i18n="filterBy">FILTER BY:</div>
-            <a href="#" class="category-item" data-category="Forex" data-i18n="forex">Forex</a>
-            <a href="#" class="category-item" data-category="Crypto" data-i18n="crypto">Crypto</a>
-            <a href="#" class="category-item" data-category="Stocks" data-i18n="stocks">Stocks</a>
-            <a href="#" class="category-item" data-category="ML Predictions" data-i18n="mlPredictions">ML Predictions</a>
-        </div>
+        <!-- Fixed bottom section for language and auth buttons -->
+        <div class="sidebar-bottom">
+            <!-- Language Switcher -->
+            <div class="lang-switcher" style="padding: 15px 20px; margin-bottom: 10px;">
+                <button id="btn-en" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; margin-right: 5px;">EN</button>
+                <button id="btn-bg" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">BG</button>
+            </div>
 
-        <!-- Language Switcher -->
-        <div class="lang-switcher" style="padding: 15px 25px; border-top: 1px solid rgba(0, 255, 136, 0.2); margin-bottom: 10px;">
-            <button id="btn-en" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; margin-right: 5px;">EN</button>
-            <button id="btn-bg" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">BG</button>
-        </div>
-
-        <div class="nav-buttons">
-            <a href="#" id="show-login" class="btn btn-secondary" data-i18n="login">Login</a>
-            <a href="#" id="show-register" class="btn btn-primary" data-i18n="register">Register</a>
-            <a href="#" id="admin-panel-btn" class="btn btn-secondary" style="display: none;" data-i18n="adminPanel">Admin</a>
-            <button id="logout-btn" class="btn btn-secondary" style="display: none;" data-i18n="logout">Logout</button>
+            <div class="nav-buttons">
+                <a href="#" id="show-login" class="btn btn-secondary" data-i18n="login">Login</a>
+                <a href="#" id="show-register" class="btn btn-primary" data-i18n="register">Register</a>
+                <a href="#" id="admin-panel-btn" class="btn btn-secondary" style="display: none;" data-i18n="adminPanel">Admin</a>
+                <button id="logout-btn" class="btn btn-secondary" style="display: none;" data-i18n="logout">Logout</button>
+            </div>
         </div>
     </nav>
 
