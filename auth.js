@@ -897,19 +897,21 @@ window.deleteNews = async (id) => {
 if (adminNewsForm) {
 // --- IMAGE CROPPER LOGIC ---
 let cropperInstance = null;
-let currentCroppedImageUrl = null; // Stores the uploaded URL
+let currentCroppedImageUrl = null; // Stores the URL of the uploaded cropped image
 
-// DOM Elements for Cropper
+// DOM Elements
 const cropperModal = document.getElementById('cropper-modal');
 const cropperImage = document.getElementById('cropper-image');
 const saveCropBtn = document.getElementById('save-crop');
 const cancelCropBtn = document.getElementById('cancel-crop');
 const newsImageInput = document.getElementById('news-image-input');
 
-// Initialize Cropper when file is selected
+// Initialize Cropper when a file is selected
 if (newsImageInput) {
     newsImageInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
+        console.log('📂 File selected:', file);
+
         if (file) {
             // Reset previous crop data
             currentCroppedImageUrl = null;
@@ -923,13 +925,15 @@ if (newsImageInput) {
                 reader.onload = (event) => {
                     if (cropperImage) {
                         cropperImage.src = event.target.result;
-                        
-                        // Destroy previous instance if exists
+                        console.log('🖼️ Image loaded into cropper element');
+
+                        // Destroy previous instance
                         if (cropperInstance) {
                             cropperInstance.destroy();
                         }
                         
-                        // Initialize Cropper (16:9 aspect ratio)
+                        // Initialize Cropper
+                        console.log('✂️ Initializing Cropper instance...');
                         cropperInstance = new Cropper(cropperImage, {
                             aspectRatio: 16 / 9,
                             viewMode: 1,
@@ -942,6 +946,9 @@ if (newsImageInput) {
                             cropBoxMovable: true,
                             cropBoxResizable: true,
                             toggleDragModeOnDblclick: false,
+                            ready() {
+                                console.log('✅ Cropper is ready');
+                            }
                         });
                     }
                 };
@@ -954,20 +961,28 @@ if (newsImageInput) {
 // Cancel Crop
 if (cancelCropBtn) {
     cancelCropBtn.addEventListener('click', () => {
+        console.log('❌ Crop cancelled');
         if (cropperModal) cropperModal.style.display = 'none';
+        
         if (cropperInstance) {
             cropperInstance.destroy();
             cropperInstance = null;
         }
-        if (newsImageInput) newsImageInput.value = ''; // Reset input
+        
+        // Reset file input so users can re-select the same file if needed
+        if (newsImageInput) newsImageInput.value = ''; 
     });
 }
 
 // Save Crop & Upload
 if (saveCropBtn) {
     saveCropBtn.addEventListener('click', async () => {
-        if (!cropperInstance) return;
+        if (!cropperInstance) {
+            console.error('❌ No cropper instance found!');
+            return;
+        }
 
+        console.log('💾 Save Crop clicked');
         const originalBtnText = saveCropBtn.innerText;
         saveCropBtn.innerText = 'Processing...';
         saveCropBtn.disabled = true;
@@ -975,28 +990,50 @@ if (saveCropBtn) {
         try {
             // Get cropped canvas
             const canvas = cropperInstance.getCroppedCanvas({
-                width: 1280, // Reasonable max width for web
+                width: 1280, 
                 height: 720,
                 fillColor: '#000'
             });
 
+            if (!canvas) {
+                throw new Error('Could not get cropped canvas');
+            }
+
             // Convert to Blob
             canvas.toBlob(async (blob) => {
                 if (!blob) {
-                    throw new Error('Canvas is empty');
+                    console.error('❌ Canvas is empty');
+                    saveCropBtn.innerText = originalBtnText;
+                    saveCropBtn.disabled = false;
+                    return;
                 }
+                
+                console.log('📦 Blob created size:', blob.size);
+
+                // Convert Blob to File object
+                const timestamp = Date.now();
+                const fileName = `news-cropped-${timestamp}.jpg`;
+                const croppedFile = new File([blob], fileName, { type: 'image/jpeg' });
+                
+                console.log('📄 File object created:', croppedFile.name);
 
                 // Upload to Supabase Storage
-                const fileName = `news-cropped-${Date.now()}.jpg`;
                 saveCropBtn.innerText = 'Uploading...';
+                console.log('⬆️ Starting upload to Supabase...');
 
                 const { data: uploadData, error: uploadError } = await supabase.storage
                     .from('news-images')
-                    .upload(fileName, blob, {
-                        contentType: 'image/jpeg'
+                    .upload(fileName, croppedFile, {
+                        contentType: 'image/jpeg',
+                        upsert: false
                     });
 
-                if (uploadError) throw new Error('Upload failed: ' + uploadError.message);
+                if (uploadError) {
+                    console.error('❌ Upload failed:', uploadError);
+                    throw new Error('Upload failed: ' + uploadError.message);
+                }
+
+                console.log('✅ Upload successful:', uploadData);
 
                 // Get Public URL
                 const { data: urlData } = supabase.storage
@@ -1004,23 +1041,22 @@ if (saveCropBtn) {
                     .getPublicUrl(fileName);
                 
                 currentCroppedImageUrl = urlData.publicUrl;
-                console.log('✅ Cropped image uploaded:', currentCroppedImageUrl);
+                console.log('🔗 Public URL retrieved:', currentCroppedImageUrl);
 
-                // Success Feedback
+                // UI Feedback
                 saveCropBtn.innerText = 'Saved!';
+                
                 setTimeout(() => {
                     if (cropperModal) cropperModal.style.display = 'none';
                     saveCropBtn.innerText = originalBtnText;
                     saveCropBtn.disabled = false;
                     
-                    // Cleanup
+                    // Cleanup cropper
                     if (cropperInstance) {
                         cropperInstance.destroy();
                         cropperInstance = null;
                     }
 
-                    // Optional: Show preview nearby input?
-                    // For now, we rely on the fact that currentCroppedImageUrl is set
                     Swal.fire({
                         icon: 'success',
                         title: 'Image Ready',
@@ -1036,7 +1072,7 @@ if (saveCropBtn) {
             }, 'image/jpeg', 0.85); // 85% quality
 
         } catch (err) {
-            console.error('Check Error:', err);
+            console.error('❌ Error in crop save:', err);
             Swal.fire({
                 icon: 'error',
                 title: 'Cropping Failed',
@@ -1052,13 +1088,15 @@ if (saveCropBtn) {
 
     adminNewsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        console.log('🚀 Submitting news form...');
+
         const title = document.getElementById('news-title').value;
         const content = newsContentInput.value;
         const newsImageInput = document.getElementById('news-image-input');
         const imageFile = newsImageInput ? newsImageInput.files[0] : null;
 
         if (!title || !content) {
-            alert('Трябва заглавие и съдържание!');
+            alert('Title and content are required!');
             return;
         }
 
@@ -1068,37 +1106,46 @@ if (saveCropBtn) {
         submitBtn.innerHTML = 'Posting...';
 
         try {
-            let imageUrl = currentCroppedImageUrl; // Use cropped URL if available
+            // Priority 1: Use the cropped image URL we just created
+            let finalImageUrl = currentCroppedImageUrl;
+            console.log('🖼️ Initial image URL candidate:', finalImageUrl);
 
-            // Fallback to original upload if no cropped URL but file exists
-            if (!imageUrl && imageFile) {
-                console.warn('⚠️ No cropped image URL found, uploading original...');
-                submitBtn.innerHTML = 'Uploading Image...';
-                const fileName = `news-${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+            // Priority 2: Fallback to direct upload if user skipped cropping (shouldn't happen with current flow, but for safety)
+            // or if the cropping failed but proper file is selected
+            if (!finalImageUrl && imageFile) {
+                console.warn('⚠️ No cropped image found. Attempting direct upload...');
+                
+                const timestamp = Date.now();
+                const cleanName = imageFile.name.replace(/[^a-zA-Z0-9.]/g, '');
+                const fileName = `news-direct-${timestamp}-${cleanName}`;
                 
                 const { data: uploadData, error: uploadError } = await supabase.storage
                     .from('news-images')
                     .upload(fileName, imageFile);
 
-                if (uploadError) throw new Error('Image upload failed: ' + uploadError.message);
+                if (uploadError) throw new Error('Direct upload failed: ' + uploadError.message);
 
                 const { data: urlData } = supabase.storage
                     .from('news-images')
                     .getPublicUrl(fileName);
                 
-                imageUrl = urlData.publicUrl;
+                finalImageUrl = urlData.publicUrl;
+                console.log('🔗 Direct upload URL:', finalImageUrl);
             }
 
+            console.log('📝 Inserting news into database...');
             // Insert News Item
             const { error: insertError } = await supabase
                 .from('news')
                 .insert([{ 
                     title: title,
                     content: content, 
-                    image_url: imageUrl 
+                    image_url: finalImageUrl 
                 }]);
 
             if (insertError) throw insertError;
+
+            console.log('✅ News inserted successfully');
 
             // Success
             document.getElementById('news-title').value = '';
@@ -1119,7 +1166,7 @@ if (saveCropBtn) {
             loadNewsSlider();
 
         } catch (err) {
-            console.error(err);
+            console.error('❌ Error posting news:', err);
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
