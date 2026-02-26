@@ -9,6 +9,9 @@ const priceCache = {}; // { 'EUR/USD': { price: '1.0821', ts: Date.now() } }
 // Request deduplication flags
 let isPredictionsLoading = false;
 let isNewsLoading = false;
+// Global Cropper Instance
+let cropperInstance = null;
+let currentCroppedImageUrl = null;
 
 // Auth Check Helper - returns true if logged in, false otherwise
 async function checkAuthForPredictions() {
@@ -352,13 +355,13 @@ async function handleRegister(e) {
     if (data.user) {
         const { error: profileError } = await supabase
             .from('profiles')
-            .insert([{ 
+            .upsert([{ 
                 id: data.user.id,
                 full_name: fullName,
                 username: username,
                 tier: selectedTier, 
                 role: 'user' 
-            }]);
+            }], { onConflict: 'id' });
 
         if (profileError) {
             console.error('Profile creation error:', profileError);
@@ -569,65 +572,14 @@ async function updateUIWithProfile(user) {
             return;
         }
 
-        // No profile found - try to create one
-        console.log('No profile found, creating default profile...');
-        
-        // Extract name from email or use default
-        const emailName = user.email.split('@')[0];
-        const displayName = user.user_metadata?.full_name || user.user_metadata?.name || emailName || 'User';
-        
-        // Create profile
-        const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert([{
-                id: user.id,
-                full_name: displayName,
-                username: emailName,
-                tier: 'Bronze',
-                role: 'user'
-            }])
-            .select()
-            .single();
+        /* 
+           NOTE: Profile creation is now handled strictly during Registration (handleRegister).
+           We do not attempt to auto-create profiles on login to avoid Race Conditions and 409 Conflicts.
+        */
+        console.warn('Profile missing for user:', user.id);
 
-        if (insertError) {
-            // If duplicate key error, profile already exists - retry select
-            if (insertError.code === '23505') {
-                console.log('Profile already exists (duplicate key), retrying fetch...');
-                
-                // Retry the select query
-                const { data: retryData, error: retryError } = await supabase
-                    .from('profiles')
-                    .select('full_name, username, tier, role')
-                    .eq('id', user.id)
-                    .single();
-
-                if (retryData && retryData.full_name) {
-                    console.log('Found profile on retry:', retryData);
-                    userNameDisplay.innerText = retryData.full_name;
-                    userProfileInfo.style.display = 'block';
-                } else {
-                    console.error('Still no profile found on retry:', retryError);
-                    // Fallback - show email name
-                    userNameDisplay.innerText = displayName;
-                    userProfileInfo.style.display = 'block';
-                }
-            } else {
-                console.error('Error creating profile:', insertError);
-                // Fallback - show email name
-                userNameDisplay.innerText = displayName;
-                userProfileInfo.style.display = 'block';
-            }
-        } else {
-            console.log('Profile created successfully:', newProfile);
-            userNameDisplay.innerText = newProfile.full_name;
-            userProfileInfo.style.display = 'block';
-        }
-    } catch (error) {
-        console.error('Error in updateUIWithProfile:', error);
-        // Fallback - show something
-        const fallbackName = user.email.split('@')[0];
-        userNameDisplay.innerText = fallbackName;
-        userProfileInfo.style.display = 'block';
+    } catch (err) {
+        console.error('Unexpected error in updateUIWithProfile:', err);
     }
 }
 
@@ -896,8 +848,7 @@ window.deleteNews = async (id) => {
 // Post News
 if (adminNewsForm) {
 // --- IMAGE CROPPER LOGIC ---
-let cropperInstance = null;
-let currentCroppedImageUrl = null; // Stores the URL of the uploaded cropped image
+// cropperInstance and currentCroppedImageUrl are now global
 
 // DOM Elements
 const cropperModal = document.getElementById('cropper-modal');
@@ -992,12 +943,13 @@ if (cancelCropBtn) {
 // Save Crop & Upload
 if (saveCropBtn) {
     saveCropBtn.addEventListener('click', async () => {
+        console.log('💾 Save Crop clicked');
+        console.log('Current cropper instance:', cropperInstance);
+
         if (!cropperInstance) {
             console.error('❌ No cropper instance found!');
             return;
         }
-
-        console.log('💾 Save Crop clicked');
         const originalBtnText = saveCropBtn.innerText;
         saveCropBtn.innerText = 'Processing...';
         saveCropBtn.disabled = true;
