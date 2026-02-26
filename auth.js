@@ -6,6 +6,10 @@ let currentPredictions = [];
 let currentCategoryFilter = null;
 const priceCache = {}; // { 'EUR/USD': { price: '1.0821', ts: Date.now() } }
 
+// Request deduplication flags
+let isPredictionsLoading = false;
+let isNewsLoading = false;
+
 // Auth Check Helper - returns true if logged in, false otherwise
 async function checkAuthForPredictions() {
     try {
@@ -96,31 +100,44 @@ function clearMessage() {
 // Load and display predictions based on user tier
 async function loadPredictions() {
     if (!predictionsFeed) return;
-
-    // Get user tier from localStorage
-    const userTier = localStorage.getItem('userTier');
     
-    if (!userTier) {
-        predictionsFeed.innerHTML = '<div class="no-predictions">Please log in to view predictions.</div>';
+    // Prevent concurrent requests
+    if (isPredictionsLoading) {
+        console.log('Predictions already loading, skipping...');
         return;
     }
+    isPredictionsLoading = true;
 
-    // Fetch all predictions from Supabase
-    const { data: predictions, error } = await supabase
-        .from('predictions')
-        .select('*')
-        .order('created_at', { ascending: false });
+    try {
+        // Get user tier from localStorage
+        const userTier = localStorage.getItem('userTier');
+        
+        if (!userTier) {
+            predictionsFeed.innerHTML = '<div class="no-predictions">Please log in to view predictions.</div>';
+            isPredictionsLoading = false;
+            return;
+        }
 
-    if (error) {
-        console.error('Error fetching predictions:', error);
-        predictionsFeed.innerHTML = '<div class="no-predictions">Error loading predictions.</div>';
-        return;
+        // Fetch all predictions from Supabase
+        const { data: predictions, error } = await supabase
+            .from('predictions')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching predictions:', error);
+            predictionsFeed.innerHTML = '<div class="no-predictions">Error loading predictions.</div>';
+            isPredictionsLoading = false;
+            return;
+        }
+
+        // Store in global state
+        currentPredictions = predictions || [];
+
+        applyFiltersAndRender();
+    } finally {
+        isPredictionsLoading = false;
     }
-
-    // Store in global state
-    currentPredictions = predictions || [];
-
-    applyFiltersAndRender();
 }
 
 // Apply tier + category filters and render — call this whenever filters change
@@ -614,21 +631,29 @@ async function updateUIWithProfile(user) {
     }
 }
 
-// Auth State Change Listener
+// Auth State Change Listener (single centralized listener)
+let authInitialized = false;
 supabase.auth.onAuthStateChange(async (event, session) => {
     console.log('Auth state changed:', event, session?.user?.id);
     updateUI(session?.user ?? null);
     
-    if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-        // Refresh session to ensure we have the latest
-        const { data: { session: freshSession } } = await supabase.auth.getSession();
-        if (freshSession) {
-            console.log('Session confirmed for user:', freshSession.user.id);
+    if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && session?.user) {
+        // Prevent duplicate initialization
+        if (authInitialized && event === 'INITIAL_SESSION') {
+            console.log('Skipping duplicate INITIAL_SESSION');
+            return;
         }
+        authInitialized = true;
+        
+        // Session is already provided - no need to call getSession() again
+        console.log('Session confirmed for user:', session.user.id);
         
         // Call updateUIWithProfile when user signs in
         updateUIWithProfile(session.user);
-        setTimeout(loadPredictions, 500);
+        
+        // Load predictions with delay to prevent request flood
+        setTimeout(() => loadPredictions(), 800);
+        
         // Close modal if open
         closeModal();
     } else if (event === 'SIGNED_OUT') {
@@ -938,11 +963,20 @@ if (adminNewsForm) {
 }
 
 // Hero News Slider Logic
+let newsSliderInitialized = false;
 async function loadNewsSlider() {
+    // Prevent multiple initializations
+    if (newsSliderInitialized) {
+        console.log('News slider already initialized, skipping...');
+        return;
+    }
+    newsSliderInitialized = true;
+    
     console.log('🔄 loadNewsSlider called');
     
     if (!heroNewsContainer) {
         console.error('❌ Hero news container (#hero-news-container) not found in DOM');
+        newsSliderInitialized = false;
         return;
     }
     
@@ -2020,23 +2054,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// --- RESTORED AUTH INITIALIZATION ---
-
-// Auth State Change Listener
-supabase.auth.onAuthStateChange((event, session) => {
-    updateUI(session?.user ?? null);
-    if (session?.user) {
-        setTimeout(loadPredictions, 500);
-    }
-});
-
-// Check initial session
-supabase.auth.getSession().then(({ data: { session } }) => {
-    updateUI(session?.user ?? null);
-    if (session?.user) {
-        loadPredictions();
-    }
-});
+// --- AUTH INITIALIZATION ---
+// Note: Single onAuthStateChange listener defined above handles all auth events
+// No duplicate listeners or getSession calls needed here
 
 // ============================================
 // MOBILE MENU EVENT LISTENERS
