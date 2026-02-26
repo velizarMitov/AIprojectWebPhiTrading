@@ -667,7 +667,7 @@ ul {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 20px 24px;
+    padding: 20px 70px 20px 24px;
     position: relative;
 }
 
@@ -918,41 +918,47 @@ ul {
 /* Prediction Action Buttons */
 .prediction-actions {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 14px;
+    right: 14px;
     display: flex;
-    gap: 8px;
+    gap: 6px;
     z-index: 10;
 }
 
 .btn-icon {
-    background-color: var(--surface-color);
+    background-color: rgba(18, 18, 18, 0.95);
     border: 1px solid var(--border-color);
     color: var(--text-color);
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
     padding: 0;
+    font-size: 1.1rem;
+    line-height: 1;
+    backdrop-filter: blur(4px);
 }
 
 .btn-icon:hover {
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .btn-edit:hover {
     background-color: var(--accent-color);
     border-color: var(--accent-color);
     color: var(--bg-color);
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.4);
 }
 
 .btn-delete:hover {
     background-color: #ff4444;
     border-color: #ff4444;
     color: #fff;
+    box-shadow: 0 4px 12px rgba(255, 68, 68, 0.4);
 }
 
 .modal-title {

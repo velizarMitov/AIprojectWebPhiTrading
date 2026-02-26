@@ -177,8 +177,8 @@ function applyFiltersAndRender() {
         // Admin action buttons
         const adminButtons = isAdmin ? `
             <div class="prediction-actions" style="position:absolute; top:12px; right:12px; display:flex; gap:8px; z-index:5;">
-                <button class="edit-btn" data-id="${pred.id}" style="padding:6px 14px; background:#00ff88; color:#050505; border:none; font-weight:700; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer;">Edit</button>
-                <button class="delete-btn" data-id="${pred.id}" style="padding:6px 14px; background:#ff4444; color:#fff; border:none; font-weight:700; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer;">Delete</button>
+                <button class="edit-btn btn-icon" data-id="${pred.id}" title="Edit" aria-label="Edit Prediction">✎</button>
+                <button class="delete-btn btn-icon" data-id="${pred.id}" title="Delete" aria-label="Delete Prediction">⨯</button>
             </div>
         ` : '';
 
