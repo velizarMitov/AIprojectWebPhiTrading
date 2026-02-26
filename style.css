@@ -455,10 +455,10 @@ ul {
 
 /* Hero news headline */
 .hero-news-headline {
-    font-size: 2.5rem;
-    line-height: 1.3;
+    font-size: 2rem; /* Reduced from 2.5rem for better balance */
+    line-height: 1.4;
     font-weight: 800;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.02em;
     color: var(--text-color);
     text-transform: uppercase;
     text-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
@@ -470,7 +470,7 @@ ul {
 @keyframes slideInLeft {
     from {
         opacity: 0;
-        transform: translateX(-30px);
+        transform: translateX(-20px);
     }
     to {
         opacity: 1;
@@ -501,14 +501,23 @@ ul {
     .hero-news-container {
         height: 50vh;
         min-height: 400px;
+        align-items: flex-end; /* Ensure bottom alignment on tablet */
+        justify-content: flex-start;
+        padding: 30px;
     }
     
     .hero-news-headline {
-        font-size: 2.5rem;
+        font-size: 1.75rem; /* Scaled down for tablet/small laptop */
     }
     
+    .hero-news-excerpt {
+        font-size: 1rem;
+        max-width: 100%;
+    }
+
     .hero-news-content {
-        padding: 30px 20px;
+        padding: 25px 30px;
+        max-width: 90%;
     }
 }
 
@@ -516,15 +525,37 @@ ul {
     .hero-news-container {
         height: 45vh;
         min-height: 350px;
+        padding: 20px;
     }
     
     .hero-news-headline {
-        font-size: 1.8rem;
+        font-size: 1.4rem; /* Mobile optimized size */
+        line-height: 1.35;
+    }
+    
+    .hero-news-excerpt {
+        font-size: 0.9rem;
+        margin-top: 10px;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 3; /* Limit excerpt lines on mobile */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .hero-news-content {
+        padding: 20px 20px;
+        width: 100%;
+        max-width: 100%;
+        border-left-width: 2px;
+        border-radius: 0 6px 6px 0;
+        backdrop-filter: blur(8px); /* Reduce blur for performance on mobile */
     }
     
     .breaking-badge {
         font-size: 0.65rem;
         padding: 4px 12px;
+        margin-bottom: 15px;
     }
     
     .hero-news-container .hero-cta {
