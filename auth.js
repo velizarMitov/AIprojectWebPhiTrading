@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js';
+import { i18nData } from './translations.js';
 
 // Global State
 let currentPredictions = [];
@@ -991,6 +992,94 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Load News Section - Display all news articles for public viewing
+async function loadNewsSection() {
+    const newsFeed = document.getElementById('news-feed');
+    if (!newsFeed) return;
+
+    console.log('🔄 Loading news section...');
+
+    // Show loading message
+    newsFeed.innerHTML = '<p style="text-align: center; color: #888;">Loading news...</p>';
+
+    try {
+        // Fetch all news articles
+        const { data: newsItems, error } = await supabase
+            .from('news')
+            .select('id, title, content, image_url, created_at')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('❌ Error fetching news:', error);
+            newsFeed.innerHTML = '<p style="text-align: center; color: #ff4444;">Error loading news</p>';
+            return;
+        }
+
+        if (!newsItems || newsItems.length === 0) {
+            newsFeed.innerHTML = '<p style="text-align: center; color: #888;">No news articles available</p>';
+            return;
+        }
+
+        // Render news articles
+        newsFeed.innerHTML = newsItems.map(item => {
+            const date = new Date(item.created_at);
+            const formattedDate = date.toLocaleDateString('en-US', {
+                month: 'long', day: 'numeric', year: 'numeric'
+            });
+
+            const previewText = item.content ? item.content.substring(0, 200) + '...' : 'No content available';
+
+            return `
+                <article class="news-card" onclick="showNewsDetails('${item.id}')" style="
+                    background: #1a1a1a; 
+                    border: 1px solid #333; 
+                    border-radius: 8px; 
+                    padding: 20px; 
+                    margin-bottom: 20px; 
+                    cursor: pointer; 
+                    transition: all 0.2s ease;
+                    ">
+                    <div style="display: flex; gap: 20px;">
+                        ${item.image_url ? `
+                            <div style="flex-shrink: 0;">
+                                <img src="${item.image_url}" alt="${item.title || 'News image'}" 
+                                     style="width: 120px; height: 80px; object-fit: cover; border-radius: 4px;">
+                            </div>
+                        ` : ''}
+                        <div style="flex: 1;">
+                            <h3 style="
+                                color: #00ff88; 
+                                font-size: 1.2rem; 
+                                font-weight: 700; 
+                                margin: 0 0 10px 0; 
+                                line-height: 1.3;
+                                ">${item.title || 'Untitled News'}</h3>
+                            <p style="
+                                color: #ccc; 
+                                font-size: 0.9rem; 
+                                margin: 0 0 10px 0; 
+                                line-height: 1.5;
+                                ">${previewText}</p>
+                            <div style="
+                                color: #888; 
+                                font-size: 0.8rem; 
+                                text-transform: uppercase; 
+                                letter-spacing: 1px;
+                                ">${formattedDate}</div>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }).join('');
+
+        console.log('✅ News section loaded with', newsItems.length, 'articles');
+
+    } catch (err) {
+        console.error('❌ Error in loadNewsSection:', err);
+        newsFeed.innerHTML = '<p style="text-align: center; color: #ff4444;">Error loading news</p>';
+    }
+}
+
 // Event Listeners
 showLoginBtn.addEventListener('click', (e) => {
     e.preventDefault();
@@ -1091,6 +1180,7 @@ function switchView(viewName) {
     // Get view elements
     const heroSection = document.querySelector('.hero');
     const predictionsSection = document.getElementById('predictions-section');
+    const newsSection = document.getElementById('news-section');
     const adminSection = document.getElementById('admin-section');
     const predictionDetails = document.getElementById('prediction-details');
     const newsDetails = document.getElementById('news-details');
@@ -1101,6 +1191,7 @@ function switchView(viewName) {
     // Hide all sections first
     if (heroSection) heroSection.style.display = 'none';
     if (predictionsSection) predictionsSection.style.display = 'none';
+    if (newsSection) newsSection.style.display = 'none';
     if (adminSection) adminSection.style.display = 'none';
     if (predictionDetails) predictionDetails.style.display = 'none';
     if (newsDetails) newsDetails.style.display = 'none';
@@ -1113,6 +1204,15 @@ function switchView(viewName) {
         case 'home':
             if (heroSection) heroSection.style.display = 'flex';
             document.querySelector('[data-view="home"]')?.classList.add('active');
+            break;
+            
+        case 'news':
+            if (newsSection) {
+                newsSection.style.display = 'block';
+                // Load news when switching to this view
+                setTimeout(loadNewsSection, 100);
+            }
+            document.querySelector('[data-view="news"]')?.classList.add('active');
             break;
             
         case 'predictions':
@@ -1404,6 +1504,7 @@ function showPredictionDetails(pred) {
 window.showNewsDetails = async function(newsId) {
     const newsDetails = document.getElementById('news-details');
     const predictionsSection = document.getElementById('predictions-section');
+    const newsSection = document.getElementById('news-section');
     const adminSectionEl = document.getElementById('admin-section');
     const heroSection = document.querySelector('.hero');
 
@@ -1411,6 +1512,7 @@ window.showNewsDetails = async function(newsId) {
 
     // Hide all sections
     if (predictionsSection) predictionsSection.style.display = 'none';
+    if (newsSection) newsSection.style.display = 'none';
     if (adminSectionEl) adminSectionEl.style.display = 'none';
     if (heroSection) heroSection.style.display = 'none';
 
@@ -1461,6 +1563,7 @@ window.showNewsDetails = async function(newsId) {
     `;
 
     // Show section with fade-in animation
+    newsDetails.style.display = 'block';
     newsDetails.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -1492,6 +1595,7 @@ window.backToHome = function() {
     // Hide prediction details
     const predictionDetails = document.getElementById('prediction-details');
     if (predictionDetails) {
+        predictionDetails.style.display = 'none';
         predictionDetails.classList.remove('active');
         predictionDetails.innerHTML = '';
     }
@@ -1499,23 +1603,27 @@ window.backToHome = function() {
     // Hide news details
     const newsDetails = document.getElementById('news-details');
     if (newsDetails) {
+        newsDetails.style.display = 'none';
         newsDetails.classList.remove('active');
         newsDetails.innerHTML = '';
     }
 
-    // Show all sections
+    // Show all main sections
     const predictionsSection = document.getElementById('predictions-section');
-    if (predictionsSection) predictionsSection.style.display = '';
+    if (predictionsSection) predictionsSection.style.display = 'block';
+
+    const newsSection = document.getElementById('news-section');
+    if (newsSection) newsSection.style.display = 'block';
 
     const heroSection = document.querySelector('.hero');
-    if (heroSection) heroSection.style.display = '';
+    if (heroSection) heroSection.style.display = 'block';
 
     const isAdmin = localStorage.getItem('userRole') === 'admin';
     const adminSectionEl = document.getElementById('admin-section');
     if (adminSectionEl) adminSectionEl.style.display = isAdmin ? 'block' : 'none';
 
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Switch back to home view
+    switchView('home');
 }
 
 // Async function to execute the actual delete after confirmation
@@ -1901,4 +2009,97 @@ document.addEventListener('keydown', (e) => {
         console.log('No existing session found');
     }
 })();
+
+// ============================================
+// MULTI-LANGUAGE SUPPORT
+// ============================================
+
+// Update language for all elements with data-i18n attributes
+function updateLanguage(lang) {
+    console.log('Updating language to:', lang);
+    
+    // Validate language exists in translations
+    if (!i18nData[lang]) {
+        console.error('Language not found:', lang);
+        return;
+    }
+    
+    // Save language preference
+    localStorage.setItem('preferredLang', lang);
+    
+    // Update all elements with data-i18n attributes
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        const translation = i18nData[lang][key];
+        
+        if (translation) {
+            // Update text content for most elements
+            if (element.tagName === 'INPUT' && element.type === 'text') {
+                // For input placeholders, check if it has a placeholder
+                if (element.placeholder) {
+                    element.placeholder = translation;
+                } else {
+                    element.value = translation;
+                }
+            } else if (element.tagName === 'INPUT' && element.type === 'email') {
+                // Keep email placeholder as is, or translate if needed
+                element.placeholder = translation;
+            } else if (element.tagName === 'INPUT' && element.type === 'password') {
+                // Keep password placeholder as is
+                element.placeholder = translation;
+            } else {
+                // For regular elements, update text content
+                element.textContent = translation;
+            }
+        } else {
+            console.warn(`Translation not found for key: ${key} in language: ${lang}`);
+        }
+    });
+    
+    // Update active language button styling
+    document.querySelectorAll('#btn-en, #btn-bg').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById(`btn-${lang}`).classList.add('active');
+}
+
+// Initialize language switching
+function initializeLanguageSupport() {
+    console.log('Initializing language support...');
+    
+    // Get language buttons
+    const btnEn = document.getElementById('btn-en');
+    const btnBg = document.getElementById('btn-bg');
+    
+    if (!btnEn || !btnBg) {
+        console.error('Language buttons not found');
+        return;
+    }
+    
+    // Add event listeners
+    btnEn.addEventListener('click', () => {
+        updateLanguage('en');
+    });
+    
+    btnBg.addEventListener('click', () => {
+        updateLanguage('bg');
+    });
+    
+    // Load preferred language from localStorage or default to 'en'
+    const preferredLang = localStorage.getItem('preferredLang') || 'en';
+    console.log('Loading preferred language:', preferredLang);
+    updateLanguage(preferredLang);
+}
+
+// Initialize language support when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    initializeLanguageSupport();
+});
+
+// Also initialize immediately in case DOM is already loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeLanguageSupport);
+} else {
+    initializeLanguageSupport();
+}
 

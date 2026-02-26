@@ -31,29 +31,38 @@
         
         <div class="nav-menu">
             <a href="#" class="nav-item active" data-view="home">
-                <span>◆</span> Home
+                <span>◆</span> <span data-i18n="home">Home</span>
+            </a>
+            <a href="#" class="nav-item" data-view="news">
+                <span>◈</span> <span data-i18n="news">News</span>
             </a>
             <a href="#" class="nav-item" data-view="predictions">
-                <span>▸</span> Predictions
+                <span>▸</span> <span data-i18n="latestPredictions">Predictions</span>
             </a>
             <a href="#" class="nav-item" id="admin-nav-btn" style="display: none;" data-view="admin">
-                <span>◉</span> Admin Panel
+                <span>◉</span> <span data-i18n="adminPanel">Admin Panel</span>
             </a>
         </div>
 
         <div class="nav-categories">
-            <div class="category-label">FILTER BY:</div>
-            <a href="#" class="category-item" data-category="Forex">Forex</a>
-            <a href="#" class="category-item" data-category="Crypto">Crypto</a>
-            <a href="#" class="category-item" data-category="Stocks">Stocks</a>
-            <a href="#" class="category-item" data-category="ML Predictions">ML Predictions</a>
+            <div class="category-label" data-i18n="filterBy">FILTER BY:</div>
+            <a href="#" class="category-item" data-category="Forex" data-i18n="forex">Forex</a>
+            <a href="#" class="category-item" data-category="Crypto" data-i18n="crypto">Crypto</a>
+            <a href="#" class="category-item" data-category="Stocks" data-i18n="stocks">Stocks</a>
+            <a href="#" class="category-item" data-category="ML Predictions" data-i18n="mlPredictions">ML Predictions</a>
+        </div>
+
+        <!-- Language Switcher -->
+        <div class="lang-switcher" style="padding: 15px 25px; border-top: 1px solid rgba(0, 255, 136, 0.2); margin-bottom: 10px;">
+            <button id="btn-en" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; margin-right: 5px;">EN</button>
+            <button id="btn-bg" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">BG</button>
         </div>
 
         <div class="nav-buttons">
-            <a href="#" id="show-login" class="btn btn-secondary">Login</a>
-            <a href="#" id="show-register" class="btn btn-primary">Register</a>
-            <a href="#" id="admin-panel-btn" class="btn btn-secondary" style="display: none;">Admin</a>
-            <button id="logout-btn" class="btn btn-secondary" style="display: none;">Logout</button>
+            <a href="#" id="show-login" class="btn btn-secondary" data-i18n="login">Login</a>
+            <a href="#" id="show-register" class="btn btn-primary" data-i18n="register">Register</a>
+            <a href="#" id="admin-panel-btn" class="btn btn-secondary" style="display: none;" data-i18n="adminPanel">Admin</a>
+            <button id="logout-btn" class="btn btn-secondary" style="display: none;" data-i18n="logout">Logout</button>
         </div>
 
         <div class="hamburger">
@@ -72,37 +81,47 @@
         <div id="hero-news-container" class="hero-news-container">
             <div class="hero-news-overlay"></div>
             <div class="hero-news-content">
-                <span class="breaking-badge">BREAKING</span>
-                <h1 class="hero-news-headline">Loading Market Intelligence...</h1>
+                <span class="breaking-badge" data-i18n="breaking">BREAKING</span>
+                <h1 class="hero-news-headline" data-i18n="loadingMarketIntelligence">Loading Market Intelligence...</h1>
             </div>
             <div class="hero-cta">
-                <a href="#" id="hero-cta-btn" class="btn btn-large btn-neon">GET PREDICTIONS</a>
+                <a href="#" id="hero-cta-btn" class="btn btn-large btn-neon" data-i18n="getPredictions">GET PREDICTIONS</a>
             </div>
         </div>
     </header>
 
+    <!-- News Section -->
+    <section id="news-section" class="news-section" style="display: none;">
+        <div class="container">
+            <h2 class="news-title" data-i18n="allNews">ALL NEWS</h2>
+            <div id="news-feed" class="news-feed">
+                <!-- News articles will be dynamically loaded here -->
+            </div>
+        </div>
+    </section>
+
     <!-- Admin Panel Section -->
     <section id="admin-section" class="admin-section" style="display: none;">
         <div class="container">
-            <h2 class="admin-title">ADMIN PANEL</h2>
+            <h2 class="admin-title" data-i18n="adminPanel">ADMIN PANEL</h2>
             
             <!-- News Management -->
             <div class="admin-panel" style="margin-bottom: 40px;">
                 <h3 class="panel-subtitle">Manage News</h3>
                 <form id="admin-news-form" class="admin-form">
                     <div class="form-group">
-                        <label for="news-title">News Title</label>
+                        <label for="news-title" data-i18n="newsTitle">News Title</label>
                         <input type="text" id="news-title" name="title" placeholder="Enter headline..." required style="width: 100%; padding: 10px; margin-top: 5px; background: #0d0d0d; border: 1px solid #444; color: #e0e0e0; font-size: 1rem;">
                     </div>
                     <div class="form-group">
-                        <label for="news-content">News Content</label>
+                        <label for="news-content" data-i18n="newsContent">News Content</label>
                         <textarea id="news-content" name="content" rows="3" placeholder="Enter full article text..." required></textarea>
                     </div>
                     <div class="form-group">
                         <label for="news-image-input">News Image (Optional)</label>
                         <input type="file" id="news-image-input" accept="image/*" style="width: 100%; margin-top: 5px;">
                     </div>
-                    <button type="submit" class="btn btn-primary">Post News</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="postNews">Post News</button>
                 </form>
                 <div id="admin-news-list" class="admin-list" style="margin-top: 20px;">
                     <!-- News items will be loaded here -->
@@ -113,33 +132,33 @@
                 <h3 class="panel-subtitle">Add New Prediction</h3>
                 <form id="admin-prediction-form" class="admin-form">
                     <div class="form-group">
-                        <label for="prediction-category">Category</label>
+                        <label for="prediction-category" data-i18n="category">Category</label>
                         <select id="prediction-category" name="category" required>
                             <option value="">Select Category</option>
-                            <option value="Forex">Forex</option>
-                            <option value="Crypto">Crypto</option>
-                            <option value="Stocks">Stocks</option>
-                            <option value="ML Predictions">ML Predictions</option>
+                            <option value="Forex" data-i18n="forex">Forex</option>
+                            <option value="Crypto" data-i18n="crypto">Crypto</option>
+                            <option value="Stocks" data-i18n="stocks">Stocks</option>
+                            <option value="ML Predictions" data-i18n="mlPredictions">ML Predictions</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
-                        <label for="prediction-asset">Asset</label>
+                        <label for="prediction-asset" data-i18n="asset">Asset</label>
                         <input type="text" id="prediction-asset" name="asset" placeholder="e.g., BTC/USD, EUR/USD" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="prediction-text">Prediction Text</label>
+                        <label for="prediction-text" data-i18n="predictionText">Prediction Text</label>
                         <textarea id="prediction-text" name="prediction_text" rows="5" placeholder="Enter your trading prediction..." required></textarea>
                     </div>
                     
                     <div class="form-group">
-                        <label for="prediction-tier">Required Tier</label>
+                        <label for="prediction-tier" data-i18n="requiredTier">Required Tier</label>
                         <select id="prediction-tier" name="required_tier" required>
                             <option value="">Select Tier</option>
-                            <option value="Bronze">Bronze</option>
-                            <option value="Silver">Silver</option>
-                            <option value="Gold">Gold</option>
+                            <option value="Bronze" data-i18n="bronze">Bronze</option>
+                            <option value="Silver" data-i18n="silver">Silver</option>
+                            <option value="Gold" data-i18n="gold">Gold</option>
                         </select>
                     </div>
                     
@@ -148,7 +167,7 @@
                         <input type="file" id="prediction-image" name="image" accept="image/*">
                     </div>
                     
-                    <button type="submit" class="btn btn-primary btn-large">Add Prediction</button>
+                    <button type="submit" class="btn btn-primary btn-large" data-i18n="addPrediction">Add Prediction</button>
                 </form>
             </div>
         </div>
@@ -157,7 +176,7 @@
     <!-- Predictions Feed Section -->
     <section id="predictions-section" class="predictions-section">
         <div class="container">
-            <h2 class="predictions-title">LATEST PREDICTIONS</h2>
+            <h2 class="predictions-title" data-i18n="latestPredictions">LATEST PREDICTIONS</h2>
             <div id="predictions-feed" class="predictions-feed">
                 <!-- Predictions will be dynamically loaded here -->
             </div>
@@ -169,51 +188,51 @@
         <div class="modal-content">
             <button id="close-modal" class="modal-close">&times;</button>
             <div class="modal-tabs">
-                <button class="tab-btn active" data-tab="login">Login</button>
-                <button class="tab-btn" data-tab="register">Register</button>
+                <button class="tab-btn active" data-tab="login" data-i18n="login">Login</button>
+                <button class="tab-btn" data-tab="register" data-i18n="register">Register</button>
             </div>
             <div id="auth-message" class="auth-message"></div>
             
             <!-- Login Form -->
             <form id="login-form" class="auth-form active">
                 <div class="form-group">
-                    <label for="login-email">Email</label>
+                    <label for="login-email" data-i18n="email">Email</label>
                     <input type="email" id="login-email" required placeholder="you@example.com">
                 </div>
                 <div class="form-group">
-                    <label for="login-password">Password</label>
+                    <label for="login-password" data-i18n="password">Password</label>
                     <input type="password" id="login-password" required placeholder="••••••••">
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Login</button>
+                <button type="submit" class="btn btn-primary btn-block" data-i18n="login">Login</button>
             </form>
 
             <!-- Register Form -->
             <form id="register-form" class="auth-form">
                 <div class="form-group">
-                    <label for="register-fullname">Full Name</label>
+                    <label for="register-fullname" data-i18n="fullName">Full Name</label>
                     <input type="text" id="register-fullname" required placeholder="John Doe">
                 </div>
                 <div class="form-group">
-                    <label for="register-username">Username</label>
+                    <label for="register-username" data-i18n="username">Username</label>
                     <input type="text" id="register-username" required placeholder="username" minlength="3">
                 </div>
                 <div class="form-group">
-                    <label for="register-email">Email</label>
+                    <label for="register-email" data-i18n="email">Email</label>
                     <input type="email" id="register-email" required placeholder="you@example.com">
                 </div>
                 <div class="form-group">
-                    <label for="register-password">Password</label>
+                    <label for="register-password" data-i18n="password">Password</label>
                     <input type="password" id="register-password" required minlength="6" placeholder="••••••••">
                 </div>
                 <div class="form-group">
-                    <label for="tier-select">Select Tier</label>
+                    <label for="tier-select" data-i18n="selectTier">Select Tier</label>
                     <select id="tier-select" required>
-                        <option value="Bronze" selected>Bronze</option>
-                        <option value="Silver">Silver</option>
-                        <option value="Gold">Gold</option>
+                        <option value="Bronze" selected data-i18n="bronze">Bronze</option>
+                        <option value="Silver" data-i18n="silver">Silver</option>
+                        <option value="Gold" data-i18n="gold">Gold</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Register</button>
+                <button type="submit" class="btn btn-primary btn-block" data-i18n="register">Register</button>
             </form>
         </div>
     </div>
@@ -306,6 +325,7 @@
     </main>
     <!-- End Main Content -->
 
+    <script type="module" src="translations.js"></script>
     <script type="module" src="auth.js"></script>
 </body>
 </html>
