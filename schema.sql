@@ -10,11 +10,16 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================
 CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    full_name VARCHAR(255),
+    username VARCHAR(100) UNIQUE,
     role VARCHAR(50) DEFAULT 'user' NOT NULL,
     tier VARCHAR(50) DEFAULT 'Bronze' NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+-- Add index on username for faster lookups
+CREATE INDEX IF NOT EXISTS idx_profiles_username ON profiles(username);
 
 -- Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;

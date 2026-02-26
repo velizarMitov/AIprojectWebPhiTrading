@@ -233,6 +233,8 @@ async function handleRegister(e) {
     e.preventDefault();
     
     const submitBtn = e.target.querySelector('button[type="submit"]');
+    const fullName = document.getElementById('register-fullname').value.trim();
+    const username = document.getElementById('register-username').value.trim();
     const email = document.getElementById('register-email').value;
     const password = document.getElementById('register-password').value;
     const selectedTier = document.getElementById('tier-select').value;
@@ -240,6 +242,36 @@ async function handleRegister(e) {
     // Add loading state
     if (submitBtn) {
         submitBtn.disabled = true;
+        submitBtn.textContent = 'Checking...';
+    }
+
+    // Check if username already exists
+    const { data: existingUser, error: checkError } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .single();
+
+    if (existingUser) {
+        // Reset button state
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Register';
+        }
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Username Taken',
+            text: `The username "${username}" is already taken. Please choose another one.`,
+            confirmButtonColor: '#00ff88',
+            background: '#121212',
+            color: '#e0e0e0'
+        });
+        return;
+    }
+
+    // Proceed with signup
+    if (submitBtn) {
         submitBtn.textContent = 'Registering...';
     }
 
@@ -255,27 +287,50 @@ async function handleRegister(e) {
     }
 
     if (error) {
-        showMessage(error.message, true);
+        Swal.fire({
+            icon: 'error',
+            title: 'Registration Failed',
+            text: error.message,
+            confirmButtonColor: '#00ff88',
+            background: '#121212',
+            color: '#e0e0e0'
+        });
         console.error('Signup error:', error);
         return;
     }
 
-    // Insert profile data into profiles table
+    // Insert profile data into profiles table with full_name and username
     if (data.user) {
         const { error: profileError } = await supabase
             .from('profiles')
             .insert([{ 
-                id: data.user.id, 
+                id: data.user.id,
+                full_name: fullName,
+                username: username,
                 tier: selectedTier, 
                 role: 'user' 
             }]);
 
         if (profileError) {
             console.error('Profile creation error:', profileError);
-            showMessage('Account created but profile setup failed: ' + profileError.message, true);
+            Swal.fire({
+                icon: 'error',
+                title: 'Profile Setup Failed',
+                text: 'Account created but profile setup failed: ' + profileError.message,
+                confirmButtonColor: '#00ff88',
+                background: '#121212',
+                color: '#e0e0e0'
+            });
         } else {
             console.log('Profile created successfully for user:', data.user.id);
-            showMessage('Registration successful! Check your email to confirm.');
+            Swal.fire({
+                icon: 'success',
+                title: 'Registration Successful!',
+                text: 'Check your email to confirm your account.',
+                confirmButtonColor: '#00ff88',
+                background: '#121212',
+                color: '#e0e0e0'
+            });
             registerForm.reset();
         }
     }
@@ -403,11 +458,53 @@ async function updateUI(user) {
     }
 }
 
+// Fetch and show user profile information
+async function fetchAndShowProfile(userId) {
+    const userProfileInfo = document.getElementById('user-profile-info');
+    const userNameDisplay = document.getElementById('user-name-display');
+    
+    if (!userProfileInfo || !userNameDisplay) return;
+
+    try {
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', userId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching user profile:', error);
+            return;
+        }
+
+        if (profile && profile.full_name) {
+            userNameDisplay.textContent = profile.full_name;
+            userProfileInfo.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error in fetchAndShowProfile:', error);
+    }
+}
+
 // Auth State Change Listener
 supabase.auth.onAuthStateChange((event, session) => {
     updateUI(session?.user ?? null);
+    
     if (session?.user) {
+        // Call fetchAndShowProfile when user is logged in
+        fetchAndShowProfile(session.user.id);
         setTimeout(loadPredictions, 500);
+    } else {
+        // Hide profile container and clear text when user is logged out
+        const userProfileInfo = document.getElementById('user-profile-info');
+        const userNameDisplay = document.getElementById('user-name-display');
+        
+        if (userProfileInfo) {
+            userProfileInfo.style.display = 'none';
+        }
+        if (userNameDisplay) {
+            userNameDisplay.textContent = '';
+        }
     }
 });
 
@@ -837,11 +934,11 @@ showRegisterBtn.addEventListener('click', (e) => {
 
 closeModalBtn.addEventListener('click', closeModal);
 
-authModal.addEventListener('click', (e) => {
-    if (e.target === authModal) {
-        closeModal();
-    }
-});
+// authModal.addEventListener('click', (e) => {
+//     if (e.target === authModal) {
+//         closeModal();
+//     }
+// });
 
 tabBtns.forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));

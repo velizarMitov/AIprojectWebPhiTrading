@@ -25,14 +25,18 @@
     <nav class="navbar">
         <div class="logo">PHI<span class="accent">.TRADING</span></div>
         
+        <div id="user-profile-info" style="display: none;">
+            <span id="user-name-display"></span>
+        </div>
+        
         <div class="nav-menu">
-            <a href="#home" class="nav-item active" data-view="home">
+            <a href="#" class="nav-item active" data-view="home">
                 <span>◆</span> Home
             </a>
-            <a href="#predictions" class="nav-item" data-view="predictions">
+            <a href="#" class="nav-item" data-view="predictions">
                 <span>▸</span> Predictions
             </a>
-            <a href="#admin" class="nav-item" id="admin-nav-btn" style="display: none;" data-view="admin">
+            <a href="#" class="nav-item" id="admin-nav-btn" style="display: none;" data-view="admin">
                 <span>◉</span> Admin Panel
             </a>
         </div>
@@ -46,9 +50,9 @@
         </div>
 
         <div class="nav-buttons">
-            <a href="#login" id="show-login" class="btn btn-secondary">Login</a>
-            <a href="#register" id="show-register" class="btn btn-primary">Register</a>
-            <a href="#admin" id="admin-panel-btn" class="btn btn-secondary" style="display: none;">Admin</a>
+            <a href="#" id="show-login" class="btn btn-secondary">Login</a>
+            <a href="#" id="show-register" class="btn btn-primary">Register</a>
+            <a href="#" id="admin-panel-btn" class="btn btn-secondary" style="display: none;">Admin</a>
             <button id="logout-btn" class="btn btn-secondary" style="display: none;">Logout</button>
         </div>
 
@@ -72,7 +76,7 @@
                 <h1 class="hero-news-headline">Loading Market Intelligence...</h1>
             </div>
             <div class="hero-cta">
-                <a href="#predictions" id="hero-cta-btn" class="btn btn-large btn-neon">GET PREDICTIONS</a>
+                <a href="#" id="hero-cta-btn" class="btn btn-large btn-neon">GET PREDICTIONS</a>
             </div>
         </div>
     </header>
@@ -185,6 +189,14 @@
 
             <!-- Register Form -->
             <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="register-fullname">Full Name</label>
+                    <input type="text" id="register-fullname" required placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" required placeholder="username" minlength="3">
+                </div>
                 <div class="form-group">
                     <label for="register-email">Email</label>
                     <input type="email" id="register-email" required placeholder="you@example.com">
