@@ -1036,7 +1036,6 @@ async function loadNewsSlider() {
             const contentDiv = heroNewsContainer.querySelector('.hero-news-content');
             if (contentDiv) {
                 contentDiv.innerHTML = `
-                    <span class="breaking-badge">BREAKING</span>
                     <h1 class="hero-news-headline" style="cursor: pointer;" onclick="showNewsDetails('${item.id}')">${item.title || item.content}</h1>
                 `;
             }
@@ -1078,7 +1077,6 @@ function setHeroContent(badge, headline, imageUrl) {
     const contentDiv = heroNewsContainer.querySelector('.hero-news-content');
     if (contentDiv) {
         contentDiv.innerHTML = `
-            <span class="breaking-badge">${badge}</span>
             <h1 class="hero-news-headline">${headline}</h1>
         `;
     }
