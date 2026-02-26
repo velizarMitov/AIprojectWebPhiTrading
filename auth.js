@@ -932,9 +932,24 @@ if (newsImageInput) {
                             cropperInstance.destroy();
                         }
                         
-                        // Initialize Cropper
-                        console.log('✂️ Initializing Cropper instance...');
-                        cropperInstance = new Cropper(cropperImage, {
+                        // Initialize Cropper (16:9 aspect ratio)
+                        console.log('✂️ Initializing Cropper instance...', window.Cropper);
+                        
+                        if (typeof Cropper === 'undefined' && typeof window.Cropper === 'undefined') {
+                            console.error('❌ Cropper.js library is not loaded!');
+                            alert('Cropper.js library failed to load. Please refresh the page.');
+                            return;
+                        }
+
+                        // Use window.Cropper just to be safe
+                        const CropperClass = window.Cropper || Cropper;
+                        
+                        // Destroy previous instance
+                        if (cropperInstance) {
+                            cropperInstance.destroy();
+                        }
+
+                        cropperInstance = new CropperClass(cropperImage, {
                             aspectRatio: 16 / 9,
                             viewMode: 1,
                             dragMode: 'move',
