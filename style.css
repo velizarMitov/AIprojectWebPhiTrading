@@ -8,7 +8,7 @@
     --sidebar-width: 260px;
     --ticker-height: 45px;
     --font-main: "Inter", sans-serif;
-    --font-heading: "Montserrat", sans-serif;
+    --font-heading: "Orbitron", sans-serif;
     --font-mono: "JetBrains Mono", monospace;
 }
 
@@ -22,21 +22,24 @@ body {
     background-color: var(--bg-color);
     color: var(--text-color);
     font-family: var(--font-main);
+    font-weight: 400;
     line-height: 1.6;
-    letter-spacing: -0.01em;
     /* Removed overflow-x: hidden to allow proper mobile scrolling */
 }
 
-/* Headings Typography */
+/* Futuristic Headings Typography */
 h1, h2, h3, h4, h5, h6,
 .hero-news-headline,
 .admin-title,
 .predictions-title,
 .news-title,
-.modal-title {
+.modal-title,
+.sidebar-title {
     font-family: var(--font-heading);
+    font-weight: 400;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
 }
 
 .container {
@@ -60,9 +63,10 @@ ul {
 .btn {
     display: inline-block;
     padding: 10px 24px;
-    font-weight: 700;
+    font-family: var(--font-main);
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     cursor: pointer;
     transition: all 0.3s ease;
     border: 1px solid transparent;
@@ -193,17 +197,20 @@ ul {
 }
 
 .logo {
-    font-size: 1.8rem;
-    font-weight: 700;
-    letter-spacing: -1px;
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
     color: var(--text-color);
     padding: 0 25px 30px;
     border-bottom: 1px solid rgba(0, 255, 136, 0.2);
     margin-bottom: 30px;
+    text-transform: uppercase;
 }
 
 .logo .accent {
     color: var(--accent-color);
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
 }
 
 /* User Profile Info */
@@ -236,8 +243,9 @@ ul {
     align-items: center;
     gap: 12px;
     padding: 14px 15px;
-    font-weight: 600;
+    font-weight: 500;
     font-size: 1rem;
+    letter-spacing: 0.5px;
     color: rgba(224, 224, 224, 0.7);
     transition: all 0.3s ease;
     border-left: 3px solid transparent;
@@ -250,14 +258,16 @@ ul {
 
 .nav-item:hover {
     color: var(--accent-color);
-    background: rgba(0, 255, 136, 0.05);
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.5), 0 0 15px rgba(0, 255, 136, 0.3);
     border-left-color: var(--accent-color);
+    background: transparent;
 }
 
 .nav-item.active {
     color: var(--accent-color);
-    background: rgba(0, 255, 136, 0.1);
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.6), 0 0 20px rgba(0, 255, 136, 0.4);
     border-left-color: var(--accent-color);
+    background: transparent;
 }
 
 /* Category Filters */
@@ -470,10 +480,11 @@ ul {
 
 /* Hero news headline */
 .hero-news-headline {
-    font-size: 2rem; /* Reduced from 2.5rem for better balance */
-    line-height: 1.4;
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    line-height: 1.2;
+    font-weight: 400;
+    letter-spacing: 0.5px;
     color: var(--text-color);
     text-transform: uppercase;
     text-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
@@ -639,9 +650,11 @@ ul {
 }
 
 .admin-title {
-    font-size: 3rem;
-    font-weight: 800;
-    letter-spacing: -1px;
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
     text-transform: uppercase;
     margin-bottom: 40px;
     text-align: center;
@@ -649,9 +662,11 @@ ul {
 }
 
 .panel-subtitle {
-    font-size: 1.5rem;
-    font-weight: 600;
-    letter-spacing: -0.5px;
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
     text-transform: uppercase;
     margin-bottom: 30px;
     color: var(--text-color);
@@ -756,9 +771,11 @@ ul {
 }
 
 .predictions-title {
-    font-size: 3rem;
-    font-weight: 800;
-    letter-spacing: -1px;
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
     text-transform: uppercase;
     margin-bottom: 50px;
     text-align: center;
@@ -849,14 +866,17 @@ ul {
 }
 
 .prediction-asset {
-    font-size: 1.4rem;
-    font-weight: 800;
+    font-size: 1.3rem;
+    font-weight: 400;
     font-family: var(--font-heading);
     color: var(--text-color);
-    margin-bottom: 4px;
-    letter-spacing: 0.02em;
+    margin-bottom: 0;
+    padding-bottom: 10px;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
     text-transform: uppercase;
-    text-shadow: 0 0 12px rgba(0, 255, 136, 0.3);
+    background: none;
+    border-bottom: 1px solid rgba(0, 255, 136, 0.3);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1091,9 +1111,11 @@ ul {
 }
 
 .news-title {
-    font-size: 3rem;
-    font-weight: 800;
-    letter-spacing: -1px;
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
     text-transform: uppercase;
     margin-bottom: 50px;
     text-align: center;
@@ -1146,6 +1168,7 @@ ul {
 .news-card .news-date {
     color: #888;
     font-size: 0.8rem;
+    font-family: var(--font-mono);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -1240,10 +1263,12 @@ ul {
 }
 
 .modal-title {
-    font-size: 1.8rem;
-    font-weight: 700;
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 400;
     text-transform: uppercase;
-    letter-spacing: -0.5px;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
     margin-bottom: 25px;
     color: var(--accent-color);
 }
@@ -2179,13 +2204,16 @@ ul {
 
 /* Asset headline */
 .details-asset {
-    font-size: 2rem;
-    font-weight: 800;
-    letter-spacing: -1px;
-    line-height: 1.1;
+    font-size: 1.8rem;
+    font-weight: 400;
+    font-family: var(--font-heading);
+    letter-spacing: 0.5px;
+    line-height: 1.2;
     text-transform: uppercase;
     color: var(--text-color);
     margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(0, 255, 136, 0.3);
     word-break: break-word;
 }
 
@@ -2289,6 +2317,7 @@ ul {
 
 .details-date {
     font-size: 0.82rem;
+    font-family: var(--font-mono);
     color: #555;
     letter-spacing: 0.5px;
 }
