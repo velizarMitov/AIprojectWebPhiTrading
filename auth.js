@@ -7,6 +7,12 @@ let currentCategoryFilter = null;
 const priceCache = {}; // { 'EUR/USD': { price: '1.0821', ts: Date.now() } }
 let watchlistSet = new Set(); // symbol strings currently in user's watchlist
 
+// Normalize asset symbols for consistent comparison: EUR/USD → EURUSD
+function normalizeSymbol(sym) {
+    if (!sym) return '';
+    return sym.trim().toUpperCase().replace(/[\/\s]/g, '');
+}
+
 // Request deduplication flags
 let isPredictionsLoading = false;
 let isNewsLoading = false;
@@ -237,11 +243,12 @@ function applyFiltersAndRender() {
         ` : '';
 
         // Watchlist star button (non-admin only to avoid overlap)
-        const inWatchlist = symbolsInWatchlist.has(pred.asset.toUpperCase());
+        const inWatchlist = symbolsInWatchlist.has(pred.id);
         const watchlistStarBtn = !isAdmin ? `
             <button class="watchlist-star-btn${inWatchlist ? ' in-watchlist' : ''}" 
+                data-pred-id="${pred.id}"
                 data-symbol="${pred.asset}"
-                onclick="toggleWatchlist('${pred.asset.replace(/'/g, "\\'")}')"
+                onclick="toggleWatchlist('${pred.id}', '${pred.asset.replace(/'/g, "\\'")}')"
                 title="${inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}">
                 ${inWatchlist ? '⭐' : '✰'}
             </button>
@@ -2352,7 +2359,7 @@ async function loadWatchlist() {
 
     const { data, error } = await supabase
         .from('watchlist')
-        .select('id, asset_symbol')
+        .select('id, prediction_id, asset_name')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: true });
 
@@ -2362,36 +2369,45 @@ async function loadWatchlist() {
         return;
     }
 
-    // Sync the global set
+    // Sync the global set — store prediction_ids for O(1) star state lookup
     watchlistSet.clear();
-    if (data) data.forEach(row => watchlistSet.add(row.asset_symbol.toUpperCase()));
+    if (data) data.forEach(row => { if (row.prediction_id) watchlistSet.add(row.prediction_id); });
 
     // Update star buttons on visible prediction cards
     document.querySelectorAll('.watchlist-star-btn').forEach(btn => {
-        const sym = (btn.dataset.symbol || '').toUpperCase();
-        const active = watchlistSet.has(sym);
+        const predId = btn.dataset.predId || '';
+        const active = predId ? watchlistSet.has(predId) : false;
         btn.textContent = active ? '⭐' : '✰';
         btn.title = active ? 'Remove from watchlist' : 'Add to watchlist';
         btn.classList.toggle('in-watchlist', active);
     });
 
     if (!data || data.length === 0) {
-        container.innerHTML = '<span class="watchlist-empty">No assets yet. Hit + to add one.</span>';
+        container.innerHTML = '<span class="watchlist-empty">No assets yet. Hit ⭐ on a prediction card to add one.</span>';
         return;
     }
 
     container.innerHTML = data
-        .map(row => `
+        .map(row => {
+            const label = (row.asset_name || 'Unknown').toUpperCase();
+            const canNavigate = !!row.prediction_id;
+            return `
             <div class="watchlist-item" data-id="${row.id}">
-                <span class="watchlist-symbol">${row.asset_symbol.toUpperCase()}</span>
+                <span class="watchlist-symbol${canNavigate ? ' watchlist-nav-link' : ''}" 
+                    ${canNavigate ? `onclick="mapsToAsset('${row.prediction_id}')"` : ''}
+                    title="${canNavigate ? 'Go to ' + label + ' prediction' : label}">
+                    ${label}
+                </span>
                 <button class="watchlist-remove-btn" onclick="removeFromWatchlist('${row.id}')" title="Remove">&times;</button>
-            </div>`
-        ).join('');
+            </div>`;
+        }).join('');
 }
 
 async function addToWatchlist(symbol) {
     if (!symbol || symbol.trim() === '') return;
-    const clean = symbol.trim().toUpperCase();
+    // Normalize: treat EUR/USD same as EURUSD
+    const clean = normalizeSymbol(symbol);
+    if (!clean) return;
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
@@ -2399,17 +2415,31 @@ async function addToWatchlist(symbol) {
         return;
     }
 
-    const { error } = await supabase
-        .from('watchlist')
-        .insert({ user_id: session.user.id, asset_symbol: clean });
+    // Try to find a matching prediction_id from cached predictions
+    const matchedPred = currentPredictions.find(p => normalizeSymbol(p.asset) === clean);
+    const predictionId = matchedPred ? matchedPred.id : null;
+
+    const payload = { user_id: session.user.id, asset_name: clean, prediction_id: predictionId };
+    console.log('Data being sent to Supabase (addToWatchlist):', payload);
+
+    const doInsert = async () => supabase.from('watchlist').insert(payload);
+
+    let { error } = await doInsert();
 
     if (error) {
+        console.error('Add to watchlist error — code:', error.code, '| msg:', error.message);
         if (error.code === '23505') {
             Swal.fire({ icon: 'info', title: 'Already in watchlist', text: `${clean} is already on your list.`, background: '#121212', color: '#e0e0e0', confirmButtonColor: '#00ff88' });
-        } else {
-            console.error('Add to watchlist error:', error);
+            return;
         }
-        return;
+        if (error.code === '23503') {
+            // FK violation: profiles row missing — auto-create
+            await supabase.from('profiles').upsert([{ id: session.user.id, role: 'user', tier: 'Bronze' }], { onConflict: 'id' });
+            const { error: retryErr } = await doInsert();
+            if (retryErr) { console.error('Add retry error:', retryErr.message); return; }
+        } else {
+            return;
+        }
     }
 
     await loadWatchlist();
@@ -2428,7 +2458,10 @@ async function removeFromWatchlist(id) {
     await loadWatchlist();
 }
 
-async function toggleWatchlist(symbol) {
+// predictionId = UUID of the prediction row, assetName = display symbol e.g. 'EUR/USD'
+async function toggleWatchlist(predictionId, assetName) {
+    console.log('Toggling asset:', assetName, '| prediction_id:', predictionId);
+
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
@@ -2444,20 +2477,20 @@ async function toggleWatchlist(symbol) {
         return;
     }
 
-    const clean = symbol.trim().toUpperCase();
-    const alreadyIn = watchlistSet.has(clean);
+    const displayName = (assetName || predictionId || '').trim().toUpperCase();
+    const alreadyIn = watchlistSet.has(predictionId);
 
     if (alreadyIn) {
-        // Find and delete the row
+        // Find the watchlist row by prediction_id and delete it
         const { data: rows, error: fetchErr } = await supabase
             .from('watchlist')
-            .select('id')
+            .select('id, prediction_id')
             .eq('user_id', session.user.id)
-            .eq('asset_symbol', clean)
-            .limit(1);
+            .eq('prediction_id', predictionId);
 
         if (fetchErr || !rows || rows.length === 0) {
             console.error('Could not find watchlist row to delete:', fetchErr);
+            await loadWatchlist();
             return;
         }
 
@@ -2472,25 +2505,75 @@ async function toggleWatchlist(symbol) {
             toast: true, position: 'top-end', showConfirmButton: false,
             timer: 2000, timerProgressBar: true,
             icon: 'info',
-            title: `${clean} removed from watchlist`,
+            title: `${displayName} removed from watchlist`,
             background: '#121212', color: '#e0e0e0'
         });
     } else {
-        const { error: insErr } = await supabase
-            .from('watchlist')
-            .insert({ user_id: session.user.id, asset_symbol: clean });
+        const payload = {
+            user_id: session.user.id,
+            prediction_id: predictionId,
+            asset_name: assetName ? assetName.trim().toUpperCase() : displayName
+        };
+        console.log('Data being sent to Supabase:', payload);
+
+        const doInsert = async () => supabase.from('watchlist').insert(payload);
+        let { error: insErr } = await doInsert();
 
         if (insErr) {
-            if (insErr.code === '23505') return; // already exists, ignore
-            console.error('Toggle insert error:', insErr);
-            return;
+            console.error('Toggle insert error — code:', insErr.code, '| msg:', insErr.message, '| details:', insErr.details, '| hint:', insErr.hint);
+
+            if (insErr.code === '23505') {
+                console.warn('Duplicate watchlist entry, skipping toast');
+                await loadWatchlist();
+                return;
+            }
+
+            if (insErr.code === '23503') {
+                // FK violation: profiles row missing — auto-create and retry
+                console.warn('Profile row missing — attempting auto-upsert before retry');
+                const { error: profileErr } = await supabase
+                    .from('profiles')
+                    .upsert([{ id: session.user.id, role: 'user', tier: 'Bronze' }], { onConflict: 'id' });
+
+                if (profileErr) {
+                    console.error('Auto-profile upsert failed:', profileErr.message);
+                    Swal.fire({
+                        icon: 'error', title: 'Profile Missing',
+                        text: 'Your account profile could not be found. Please log out and log back in.',
+                        confirmButtonColor: '#00ff88', background: '#121212', color: '#e0e0e0'
+                    });
+                    return;
+                }
+
+                const { error: retryErr } = await doInsert();
+                if (retryErr) {
+                    console.error('Toggle insert retry error:', retryErr.message);
+                    Swal.fire({
+                        icon: 'error', title: 'Watchlist Error',
+                        text: retryErr.message || 'Could not add to watchlist.',
+                        confirmButtonColor: '#00ff88', background: '#121212', color: '#e0e0e0'
+                    });
+                    return;
+                }
+                insErr = null;
+            }
+
+            if (insErr) {
+                Swal.fire({
+                    icon: 'error', title: 'Watchlist Error',
+                    text: insErr.message || 'Could not add to watchlist.',
+                    confirmButtonColor: '#00ff88', background: '#121212', color: '#e0e0e0'
+                });
+                await loadWatchlist();
+                return;
+            }
         }
 
         Swal.fire({
             toast: true, position: 'top-end', showConfirmButton: false,
             timer: 2000, timerProgressBar: true,
             icon: 'success',
-            title: `${clean} added to watchlist`,
+            title: `${displayName} added to watchlist`,
             background: '#121212', color: '#e0e0e0'
         });
     }
@@ -2498,10 +2581,66 @@ async function toggleWatchlist(symbol) {
     await loadWatchlist();
 }
 
+// Navigate from sidebar watchlist item directly to the prediction card by its UUID
+async function mapsToAsset(predictionId) {
+    if (!predictionId) return;
+    console.log('mapsToAsset called for prediction_id:', predictionId);
+
+    // Auth check
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        Swal.fire({
+            icon: 'info', title: 'Login Required',
+            text: 'Please login to view predictions.',
+            confirmButtonColor: '#00ff88', background: '#121212', color: '#e0e0e0'
+        });
+        openModal('login');
+        return;
+    }
+
+    // Clear category filter and switch to predictions view
+    currentCategoryFilter = null;
+    document.querySelectorAll('[data-category]').forEach(l => l.classList.remove('active'));
+    switchView('predictions');
+    closeMobileMenu();
+
+    const doScroll = () => {
+        // Direct lookup by data-id attribute (the prediction UUID)
+        const card = document.querySelector(`.prediction-card[data-id="${predictionId}"]`);
+
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Brief highlight flash
+            card.style.transition = 'box-shadow 0.3s ease';
+            card.style.boxShadow = '0 0 0 2px #00ff88, 0 0 30px rgba(0,255,136,0.4)';
+            setTimeout(() => { card.style.boxShadow = ''; }, 2000);
+        } else {
+            Swal.fire({
+                toast: true, position: 'top-end', showConfirmButton: false,
+                timer: 3000, timerProgressBar: true,
+                icon: 'info',
+                title: 'Prediction not found',
+                text: 'This prediction may have been removed or is not available for your tier.',
+                background: '#121212', color: '#e0e0e0'
+            });
+        }
+    };
+
+    // If predictions already rendered, scroll immediately; otherwise load first
+    if (currentPredictions.length > 0) {
+        applyFiltersAndRender();
+        setTimeout(doScroll, 150);
+    } else {
+        await loadPredictions();
+        setTimeout(doScroll, 300);
+    }
+}
+
 // Expose to global scope (called from inline onclick)
 window.removeFromWatchlist = removeFromWatchlist;
 window.addToWatchlist = addToWatchlist;
 window.toggleWatchlist = toggleWatchlist;
+window.mapsToAsset = mapsToAsset;
 
 // Watchlist add button toggle
 document.addEventListener('DOMContentLoaded', () => {
