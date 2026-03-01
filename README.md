@@ -6,8 +6,8 @@
 **A brutalist financial intelligence platform delivering AI-powered trading signals, live market data, and institutional-grade analytics.**
 
 [![Built with Supabase](https://img.shields.io/badge/Built%20with-Supabase-3ECF8E?style=flat&logo=supabase)](https://supabase.com)
-[![Vite](https://img.shields.io/badge/Powered%20by-Vite-646CFF?style=flat&logo=vite)](https://vitejs.dev)
 [![JavaScript](https://img.shields.io/badge/Vanilla-JavaScript-F7DF1E?style=flat&logo=javascript)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
 
 </div>
 
@@ -32,10 +32,7 @@ Admin-managed breaking news system with **image uploads**, **hero slider display
 ### 📊 Real-time Market Data
 Live ticker bar powered by **Alpha Vantage API** displaying EUR/USD, GBP/USD, BTC/USD, and ETH/USD rates with smooth infinite-scroll animation and intelligent API fallback caching.
 
-### 📈 Interactive Technical Charts
-Embedded **TradingView** advanced charts with real-time candlesticks, technical indicators, and drawing tools for in-depth market analysis.
-
-### 🔐 Role-Based Access Control
+###  Role-Based Access Control
 Four-tier subscription system with **PostgreSQL Row-Level Security** enforcing content access at the database layer:
 
 | Tier      | Access Level                                  |
@@ -61,11 +58,11 @@ Email/password authentication via **Supabase Auth** with automatic profile creat
 
 | Layer       | Technology                                                                    |
 |-------------|-------------------------------------------------------------------------------|
-| **Build**   | [Vite](https://vitejs.dev) — Lightning-fast HMR, optimized production builds |
-| **Frontend**| Vanilla JavaScript (ES6+), CSS3 with Brutalist Dark Theme                     |
+| **Frontend**| Vanilla JavaScript (ES6+), HTML5, CSS3 — no build step required              |
 | **Backend** | [Supabase](https://supabase.com) — PostgreSQL, Auth, Storage, Realtime       |
-| **APIs**    | Alpha Vantage (market data), TradingView (charting widgets)                  |
-| **UI**      | SweetAlert2 (dialogs), Space Grotesk font                                     |
+| **APIs**    | Alpha Vantage (live market data ticker)                                       |
+| **Fonts**   | Orbitron (headings), Inter (UI), JetBrains Mono (prices/data) via Google Fonts|
+| **UI**      | SweetAlert2 (dialogs), i18n translations (BG/EN)                              |
 
 ---
 
@@ -74,9 +71,9 @@ Email/password authentication via **Supabase Auth** with automatic profile creat
 ### For Users
 1. **Register** → Create account and choose subscription tier (Bronze / Silver / Gold)
 2. **Login** → Access tier-filtered trading predictions feed
-3. **View Predictions** → Browse AI signals for Forex, Crypto, Stocks with charts
+3. **View Predictions** → Browse AI signals for Forex, Crypto, Stocks with confidence meters and live prices
 4. **Read News** → Click hero slider headlines to read full financial news articles
-5. **Analyze Markets** → Use embedded TradingView charts for technical analysis
+5. **Switch Language** → Toggle between Bulgarian and English (BG/EN)
 
 ### For Admins
 1. **Login** with admin credentials → Full dashboard access unlocked
@@ -90,14 +87,18 @@ Email/password authentication via **Supabase Auth** with automatic profile creat
 
 ```
 PhiTrading/
-├── index.html              # Main app structure
-├── auth.js                 # Authentication + CRUD logic
-├── style.css               # Brutalist dark theme
-├── supabase.js             # Supabase client config
-├── vite.config.js          # Build configuration
-├── schema.sql              # Database schema + RLS policies
-├── add-news-title.sql      # News table migration
-└── README.md               # This file
+├── index.html                  # Main app — all views (SPA)
+├── auth.js                     # Auth, CRUD, live prices, i18n logic
+├── style.css                   # Brutalist dark theme (Orbitron/Inter)
+├── supabase.js                 # Supabase client config
+├── translations.js             # BG/EN i18n strings
+├── schema.sql                  # Full DB schema + RLS policies
+├── add-profile-fields.sql      # Profile fields migration
+├── add-news-title.sql          # News title column migration
+├── news-policies.sql           # News RLS policies migration
+├── add-watchlist-table.sql     # Watchlist table + indexes migration
+├── _headers                    # Netlify/CDN security headers
+└── README.md                   # This file
 ```
 
 ---
@@ -135,6 +136,25 @@ Breaking financial news with hero display.
 | `content`    | TEXT        | Full article text               |
 | `image_url`  | TEXT        | Hero image URL (Supabase Storage)|
 
+### `watchlist`
+User-specific asset watchlist. **One-to-Many** relationship with `profiles`.
+
+| Column         | Type        | Description                          |
+|----------------|-------------|--------------------------------------|
+| `id`           | UUID (PK)   | Auto-generated row ID                |
+| `user_id`      | UUID (FK)   | Foreign key → `profiles.id`          |
+| `asset_symbol` | VARCHAR     | Asset ticker (e.g. EUR/USD, BTC)     |
+| `created_at`   | TIMESTAMPTZ | Row creation timestamp               |
+
+**Indexes:** `idx_watchlist_user_id`, `idx_predictions_category`
+
+**Table Relationships:**
+```
+auth.users (Supabase)
+    └── profiles          (1:1)
+            └── watchlist (1:Many)
+```
+
 ---
 
 ## 🔒 Security
@@ -150,8 +170,8 @@ Breaking financial news with hero display.
 ## 🔧 Installation
 
 ### Prerequisites
-- Node.js v18+
-- Supabase account
+- A Supabase account (free tier is sufficient)
+- Any static file server or just open `index.html` directly in a browser
 
 ### Setup
 
@@ -159,24 +179,44 @@ Breaking financial news with hero display.
 # Clone repository
 git clone https://github.com/your-username/phi-trading.git
 cd phi-trading
-
-# Install dependencies
-npm install
-
-# Configure Supabase (update supabase.js with your credentials)
-# VITE_SUPABASE_URL=https://your-project.supabase.co
-# VITE_SUPABASE_ANON_KEY=your-anon-key
-
-# Run database migrations
-# 1. Execute schema.sql in Supabase SQL Editor
-# 2. Execute add-news-title.sql for news table
-# 3. Create Storage buckets: prediction_images, news-images (public)
-
-# Start development server
-npm run dev
 ```
 
-Navigate to **http://localhost:5173**
+**No build step — no `npm install` required.**
+
+### Configure Supabase
+
+Open `supabase.js` and update with your project credentials:
+```js
+const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = 'your-anon-key';
+```
+
+### Run Database Migrations
+
+In the **Supabase Dashboard → SQL Editor**, run these files in order:
+
+| Step | File | Purpose |
+|------|------|---------|
+| 1 | `schema.sql` | Core tables, RLS policies, triggers |
+| 2 | `add-profile-fields.sql` | Profile extra fields |
+| 3 | `add-news-title.sql` | News title column |
+| 4 | `news-policies.sql` | News RLS policies |
+| 5 | `add-watchlist-table.sql` | Watchlist table + indexes |
+
+### Create Storage Buckets
+
+In **Supabase Dashboard → Storage**, create two **public** buckets:
+- `prediction_images`
+- `news-images`
+
+### Run the App
+
+Open `index.html` directly in your browser, or serve with any static server:
+```bash
+# Python (no install needed)
+python -m http.server 8080
+```
+Navigate to **http://localhost:8080**
 
 ### Create Admin User
 
