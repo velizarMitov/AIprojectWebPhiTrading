@@ -2381,6 +2381,212 @@ ul {
 }
 
 
+/* Watchlist Star Button on prediction cards */
+.watchlist-star-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 5;
+    background: rgba(9, 9, 11, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(224, 224, 224, 0.5);
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(4px);
+    padding: 0;
+}
+
+.watchlist-star-btn:hover {
+    border-color: rgba(255, 215, 0, 0.6);
+    color: #ffd700;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4), 0 0 4px rgba(255, 215, 0, 0.2);
+    transform: scale(1.1);
+    background: rgba(255, 215, 0, 0.08);
+}
+
+.watchlist-star-btn.in-watchlist {
+    border-color: rgba(255, 215, 0, 0.5);
+    color: #ffd700;
+    background: rgba(255, 215, 0, 0.06);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.25);
+}
+
+.watchlist-star-btn.in-watchlist:hover {
+    border-color: rgba(255, 68, 68, 0.5);
+    color: #ff4444;
+    box-shadow: 0 0 12px rgba(255, 68, 68, 0.3);
+    background: rgba(255, 68, 68, 0.06);
+}
+
+/* =====================
+   WATCHLIST SIDEBAR
+   ===================== */
+.watchlist-section {
+    padding: 20px 15px 10px;
+    border-top: 1px solid rgba(0, 255, 136, 0.2);
+    margin-top: 10px;
+}
+
+.watchlist-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.watchlist-title {
+    font-family: var(--font-heading);
+    font-size: 0.65rem;
+    font-weight: 400;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(0, 255, 136, 0.7);
+}
+
+.watchlist-add-btn {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 136, 0.4);
+    color: var(--accent-color);
+    width: 22px;
+    height: 22px;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.watchlist-add-btn:hover {
+    background: var(--accent-color);
+    color: var(--bg-color);
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+}
+
+.watchlist-add-row {
+    display: none;
+    gap: 6px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.watchlist-input {
+    flex: 1;
+    padding: 6px 10px;
+    background: var(--bg-color);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    color: var(--text-color);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    outline: none;
+    text-transform: uppercase;
+    min-width: 0;
+    transition: border-color 0.2s ease;
+}
+
+.watchlist-input:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.2);
+}
+
+.watchlist-confirm-btn {
+    background: var(--accent-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 6px 10px;
+    font-family: var(--font-main);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.watchlist-confirm-btn:hover {
+    background: transparent;
+    color: var(--accent-color);
+    outline: 1px solid var(--accent-color);
+}
+
+.watchlist-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.watchlist-items::-webkit-scrollbar {
+    width: 4px;
+}
+
+.watchlist-items::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 136, 0.3);
+    border-radius: 2px;
+}
+
+.watchlist-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: rgba(0, 255, 136, 0.04);
+    border: 1px solid rgba(0, 255, 136, 0.1);
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.watchlist-item:hover {
+    border-color: rgba(0, 255, 136, 0.3);
+    background: rgba(0, 255, 136, 0.07);
+}
+
+.watchlist-symbol {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    letter-spacing: 0.5px;
+}
+
+.watchlist-remove-btn {
+    background: none;
+    border: none;
+    color: rgba(224, 224, 224, 0.35);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.watchlist-remove-btn:hover {
+    color: #ff4444;
+}
+
+.watchlist-login-msg,
+.watchlist-empty,
+.watchlist-loading {
+    font-family: var(--font-main);
+    font-size: 0.75rem;
+    color: rgba(224, 224, 224, 0.35);
+    padding: 8px 0;
+    font-style: italic;
+}
+
 /* Pulse animation for breaking badge */
 @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(0, 217, 255, 0.7); }

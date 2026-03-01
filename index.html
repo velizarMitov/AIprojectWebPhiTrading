@@ -53,6 +53,21 @@
                 <a href="#" class="category-item" data-category="Stocks" data-i18n="stocks">Stocks</a>
                 <a href="#" class="category-item" data-category="ML Predictions" data-i18n="mlPredictions">ML Predictions</a>
             </div>
+
+            <!-- Watchlist Section -->
+            <div id="watchlist-section" class="watchlist-section">
+                <div class="watchlist-header">
+                    <span class="watchlist-title">MY WATCHLIST</span>
+                    <button id="watchlist-add-btn" class="watchlist-add-btn" title="Add symbol">+</button>
+                </div>
+                <div id="watchlist-add-row" class="watchlist-add-row" style="display:none;">
+                    <input type="text" id="watchlist-input" class="watchlist-input" placeholder="e.g. BTC, EURUSD" maxlength="20">
+                    <button id="watchlist-confirm-btn" class="watchlist-confirm-btn">ADD</button>
+                </div>
+                <div id="watchlist-items" class="watchlist-items">
+                    <span class="watchlist-login-msg">Login to see your watchlist</span>
+                </div>
+            </div>
         </div>
 
         <!-- Fixed bottom section for language and auth buttons -->

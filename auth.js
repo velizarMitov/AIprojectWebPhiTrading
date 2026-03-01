@@ -5,6 +5,7 @@ import { i18nData } from './translations.js';
 let currentPredictions = [];
 let currentCategoryFilter = null;
 const priceCache = {}; // { 'EUR/USD': { price: '1.0821', ts: Date.now() } }
+let watchlistSet = new Set(); // symbol strings currently in user's watchlist
 
 // Request deduplication flags
 let isPredictionsLoading = false;
@@ -184,6 +185,8 @@ function applyFiltersAndRender() {
 
     const isAdmin = localStorage.getItem('userRole') === 'admin';
 
+        // Build watchlistSet snapshot for star rendering
+        const symbolsInWatchlist = watchlistSet;
     if (filtered.length === 0) {
         const categoryText = currentCategoryFilter 
             ? (currentCategoryFilter.toLowerCase().includes('prediction') 
@@ -233,10 +236,22 @@ function applyFiltersAndRender() {
             </div>
         ` : '';
 
+        // Watchlist star button (non-admin only to avoid overlap)
+        const inWatchlist = symbolsInWatchlist.has(pred.asset.toUpperCase());
+        const watchlistStarBtn = !isAdmin ? `
+            <button class="watchlist-star-btn${inWatchlist ? ' in-watchlist' : ''}" 
+                data-symbol="${pred.asset}"
+                onclick="toggleWatchlist('${pred.asset.replace(/'/g, "\\'")}')"
+                title="${inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}">
+                ${inWatchlist ? '⭐' : '✰'}
+            </button>
+        ` : '';
+
         return `
             <div class="prediction-card" data-id="${pred.id}">
                 <span class="prediction-category">${pred.category}</span>
                 ${adminButtons}
+                ${watchlistStarBtn}
                 
                 <!-- Left Side: Image & Asset Info -->
                 <div class="card-left">
@@ -602,6 +617,9 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         // Call updateUIWithProfile when user signs in
         updateUIWithProfile(session.user);
         
+        // Load watchlist for logged-in user
+        loadWatchlist();
+        
         // Load predictions with delay to prevent request flood
         setTimeout(() => loadPredictions(), 800);
         
@@ -618,6 +636,12 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         }
         if (userNameDisplay) {
             userNameDisplay.innerText = '';
+        }
+
+        // Reset watchlist to logged-out state
+        const watchlistItems = document.getElementById('watchlist-items');
+        if (watchlistItems) {
+            watchlistItems.innerHTML = '<span class="watchlist-login-msg">Login to see your watchlist</span>';
         }
     }
 });
@@ -2307,6 +2331,211 @@ function initializeLanguageSupport() {
     console.log('Loading preferred language:', preferredLang);
     updateLanguage(preferredLang);
 }
+
+// ============================================================
+// WATCHLIST
+// ============================================================
+
+async function loadWatchlist() {
+    const container = document.getElementById('watchlist-items');
+    if (!container) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+        watchlistSet.clear();
+        container.innerHTML = '<span class="watchlist-login-msg">Login to see your watchlist</span>';
+        return;
+    }
+
+    container.innerHTML = '<span class="watchlist-loading">Loading...</span>';
+
+    const { data, error } = await supabase
+        .from('watchlist')
+        .select('id, asset_symbol')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error('Watchlist fetch error:', error);
+        container.innerHTML = '<span class="watchlist-login-msg">Could not load watchlist</span>';
+        return;
+    }
+
+    // Sync the global set
+    watchlistSet.clear();
+    if (data) data.forEach(row => watchlistSet.add(row.asset_symbol.toUpperCase()));
+
+    // Update star buttons on visible prediction cards
+    document.querySelectorAll('.watchlist-star-btn').forEach(btn => {
+        const sym = (btn.dataset.symbol || '').toUpperCase();
+        const active = watchlistSet.has(sym);
+        btn.textContent = active ? '⭐' : '✰';
+        btn.title = active ? 'Remove from watchlist' : 'Add to watchlist';
+        btn.classList.toggle('in-watchlist', active);
+    });
+
+    if (!data || data.length === 0) {
+        container.innerHTML = '<span class="watchlist-empty">No assets yet. Hit + to add one.</span>';
+        return;
+    }
+
+    container.innerHTML = data
+        .map(row => `
+            <div class="watchlist-item" data-id="${row.id}">
+                <span class="watchlist-symbol">${row.asset_symbol.toUpperCase()}</span>
+                <button class="watchlist-remove-btn" onclick="removeFromWatchlist('${row.id}')" title="Remove">&times;</button>
+            </div>`
+        ).join('');
+}
+
+async function addToWatchlist(symbol) {
+    if (!symbol || symbol.trim() === '') return;
+    const clean = symbol.trim().toUpperCase();
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        Swal.fire({ icon: 'warning', title: 'Not logged in', text: 'Please login first.', background: '#121212', color: '#e0e0e0', confirmButtonColor: '#00ff88' });
+        return;
+    }
+
+    const { error } = await supabase
+        .from('watchlist')
+        .insert({ user_id: session.user.id, asset_symbol: clean });
+
+    if (error) {
+        if (error.code === '23505') {
+            Swal.fire({ icon: 'info', title: 'Already in watchlist', text: `${clean} is already on your list.`, background: '#121212', color: '#e0e0e0', confirmButtonColor: '#00ff88' });
+        } else {
+            console.error('Add to watchlist error:', error);
+        }
+        return;
+    }
+
+    await loadWatchlist();
+}
+
+async function removeFromWatchlist(id) {
+    const { error } = await supabase
+        .from('watchlist')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error('Remove from watchlist error:', error);
+        return;
+    }
+    await loadWatchlist();
+}
+
+async function toggleWatchlist(symbol) {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Login Required',
+            text: 'Please login to save assets to your watchlist.',
+            confirmButtonColor: '#00ff88',
+            background: '#121212',
+            color: '#e0e0e0'
+        });
+        openModal('login');
+        return;
+    }
+
+    const clean = symbol.trim().toUpperCase();
+    const alreadyIn = watchlistSet.has(clean);
+
+    if (alreadyIn) {
+        // Find and delete the row
+        const { data: rows, error: fetchErr } = await supabase
+            .from('watchlist')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .eq('asset_symbol', clean)
+            .limit(1);
+
+        if (fetchErr || !rows || rows.length === 0) {
+            console.error('Could not find watchlist row to delete:', fetchErr);
+            return;
+        }
+
+        const { error: delErr } = await supabase
+            .from('watchlist')
+            .delete()
+            .eq('id', rows[0].id);
+
+        if (delErr) { console.error('Toggle delete error:', delErr); return; }
+
+        Swal.fire({
+            toast: true, position: 'top-end', showConfirmButton: false,
+            timer: 2000, timerProgressBar: true,
+            icon: 'info',
+            title: `${clean} removed from watchlist`,
+            background: '#121212', color: '#e0e0e0'
+        });
+    } else {
+        const { error: insErr } = await supabase
+            .from('watchlist')
+            .insert({ user_id: session.user.id, asset_symbol: clean });
+
+        if (insErr) {
+            if (insErr.code === '23505') return; // already exists, ignore
+            console.error('Toggle insert error:', insErr);
+            return;
+        }
+
+        Swal.fire({
+            toast: true, position: 'top-end', showConfirmButton: false,
+            timer: 2000, timerProgressBar: true,
+            icon: 'success',
+            title: `${clean} added to watchlist`,
+            background: '#121212', color: '#e0e0e0'
+        });
+    }
+
+    await loadWatchlist();
+}
+
+// Expose to global scope (called from inline onclick)
+window.removeFromWatchlist = removeFromWatchlist;
+window.addToWatchlist = addToWatchlist;
+window.toggleWatchlist = toggleWatchlist;
+
+// Watchlist add button toggle
+document.addEventListener('DOMContentLoaded', () => {
+    const addBtn = document.getElementById('watchlist-add-btn');
+    const addRow = document.getElementById('watchlist-add-row');
+    const input  = document.getElementById('watchlist-input');
+    const confirmBtn = document.getElementById('watchlist-confirm-btn');
+
+    if (addBtn && addRow && input && confirmBtn) {
+        addBtn.addEventListener('click', () => {
+            const open = addRow.style.display === 'flex';
+            addRow.style.display = open ? 'none' : 'flex';
+            if (!open) input.focus();
+        });
+
+        confirmBtn.addEventListener('click', async () => {
+            await addToWatchlist(input.value);
+            input.value = '';
+            addRow.style.display = 'none';
+        });
+
+        input.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                await addToWatchlist(input.value);
+                input.value = '';
+                addRow.style.display = 'none';
+            }
+            if (e.key === 'Escape') {
+                input.value = '';
+                addRow.style.display = 'none';
+            }
+        });
+    }
+});
 
 // Initialize language support when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
