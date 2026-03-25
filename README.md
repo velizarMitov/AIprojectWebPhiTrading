@@ -50,7 +50,7 @@ Complete content management for predictions and news:
 - **Delete**: Remove content with dark-themed confirmation dialogs
 
 ### 🔑 Secure Authentication
-Email/password authentication via **Supabase Auth** with automatic profile creation, tier selection at registration, and full session management.
+Secure authentication via **Supabase Auth** with automatic profile creation, tier selection at registration, and full session management.
 
 ---
 
@@ -70,13 +70,13 @@ Email/password authentication via **Supabase Auth** with automatic profile creat
 
 ### For Users
 1. **Register** → Create account and choose subscription tier (Bronze / Silver / Gold)
-2. **Login** → Access tier-filtered trading predictions feed
+2. **Sign In** → Access tier-filtered trading predictions feed
 3. **View Predictions** → Browse AI signals for Forex, Crypto, Stocks with confidence meters and live prices
 4. **Read News** → Click hero slider headlines to read full financial news articles
 5. **Switch Language** → Toggle between Bulgarian and English (BG/EN)
 
 ### For Admins
-1. **Login** with admin credentials → Full dashboard access unlocked
+1. **Access Admin Dashboard** with an administrator account → Full dashboard access unlocked
 2. **Manage Predictions** → Create, edit, delete trading signals with image uploads
 3. **Manage News** → Post breaking news with title, content, and hero images
 4. **Monitor Activity** → View all content regardless of tier restrictions
@@ -159,7 +159,7 @@ auth.users (Supabase)
 
 ## 🔒 Security
 
-- **Authentication**: JWT sessions via Supabase Auth with bcrypt password hashing
+- **Authentication**: Token-based sessions via Supabase Auth
 - **Authorization**: PostgreSQL Row-Level Security (RLS) enforces tier/role access at DB layer
 - **Storage**: Public read buckets (`prediction_images`, `news-images`) with authenticated write
 - **XSS Prevention**: Content Security Policy (CSP) headers
@@ -185,7 +185,7 @@ cd phi-trading
 
 ### Configure Supabase
 
-Open `supabase.js` and update with your project credentials:
+Open `supabase.js` and update with your project configuration values:
 ```js
 const SUPABASE_URL = 'https://your-project.supabase.co';
 const SUPABASE_ANON_KEY = 'your-anon-key';
@@ -203,36 +203,13 @@ In the **Supabase Dashboard → SQL Editor**, run these files in order:
 | 4 | `news-policies.sql` | News RLS policies |
 | 5 | `add-watchlist-table.sql` | Watchlist table + indexes |
 
-### Create Storage Buckets
-
-In **Supabase Dashboard → Storage**, create two **public** buckets:
-- `prediction_images`
-- `news-images`
-
-### Run the App
-
-Open `index.html` directly in your browser, or serve with any static server:
-```bash
-# Python (no install needed)
-python -m http.server 8080
-```
-Navigate to **http://localhost:8080**
-
-### Create Admin User
-
-```sql
--- Promote user to admin in Supabase SQL Editor
-UPDATE profiles
-SET role = 'admin'
-WHERE id = (SELECT id FROM auth.users WHERE email = 'your-admin@email.com');
-```
 
 ---
 
 ## 🧪 Testing
 
 - [ ] Register with each tier (Bronze/Silver/Gold) and verify content filtering
-- [ ] Login as admin and confirm CRUD buttons appear on predictions and news
+- [ ] Access the app with an admin-role account and confirm CRUD buttons appear on predictions and news
 - [ ] Create prediction with image upload — verify image renders correctly
 - [ ] Edit prediction — confirm form pre-populates with existing data
 - [ ] Delete prediction — confirm SweetAlert2 dark confirmation dialog
@@ -244,13 +221,6 @@ WHERE id = (SELECT id FROM auth.users WHERE email = 'your-admin@email.com');
 
 ---
 
-## 📞 Admin Credentials
-
-| Field    | Value               |
-|----------|---------------------|
-| Email    | `v.mitov@gmail.com` |
-| Password | `123456`            |
-| Role     | `admin`             |
 
 ---
 
